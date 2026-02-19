@@ -1,10 +1,11 @@
+<!-- delvee/index.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Delvee</title>
-  <meta name="description" content="Delvee — a surprise pulse lobby." />
+  <meta name="description" content="Delvee — timed pulse lobbies for surprise memory pages." />
   <meta name="theme-color" content="#0F1114" id="meta-theme-color" />
 
   <link rel="stylesheet" href="./styles.css" />
@@ -31,6 +32,7 @@
 
     const auth = firebase.auth();
     const functions = firebase.app().functions("europe-west2");
+    const db = firebase.firestore();
   </script>
 
   <!-- Theme (deterministic, same key as Setfeed so your toggle carries over) -->
@@ -65,70 +67,190 @@
     <div class="dv-top-inner">
       <div class="dv-brand">
         <div class="dv-mark" aria-hidden="true"></div>
-        <div class="dv-title">Delvee</div>
+        <div>
+          <div class="dv-title">Delvee</div>
+          <div class="dv-sub" id="subTitle">Pulse lobby</div>
+        </div>
       </div>
+
       <div class="dv-top-actions">
-        <button class="dv-btn dv-btn-quiet" id="btn-signout" type="button" disabled>Sign out</button>
+        <button class="dv-chip" id="btn-open-lobby" type="button" disabled title="Open the immersive lobby view">Open lobby</button>
+        <button class="dv-chip" id="btn-signout" type="button" disabled>Sign out</button>
       </div>
     </div>
   </header>
 
-  <main class="dv-wrap">
-    <section class="dv-card">
-      <h1 class="dv-h1">A pulse lobby for surprise memory pages</h1>
-      <p class="dv-lead">Sign in, choose an alias, then create or join a lobby. Live preview is anonymous.</p>
-
-      <div class="dv-status" id="status">
-        <span class="dv-dot" id="statusDot"></span>
+  <main class="dv-wrap dv-wrap-wide">
+    <section class="dv-card dv-card-wide">
+      <div class="dv-hero">
         <div>
-          <div class="dv-status-title" id="statusTitle">Not signed in</div>
-          <div class="dv-status-line" id="statusLine">Sign in to begin.</div>
+          <h1 class="dv-h1">A timed pulse. One shared page.</h1>
+          <p class="dv-lead">
+            Sign in, choose an alias, then create or join. During the pulse window, the feed is anonymous.
+            After cooldown, chat opens and the memory page unlocks.
+          </p>
+          <div class="dv-status" id="status">
+            <span class="dv-dot" id="statusDot"></span>
+            <div>
+              <div class="dv-status-title" id="statusTitle">Not signed in</div>
+              <div class="dv-status-line" id="statusLine">Sign in to create or join a lobby.</div>
+            </div>
+            <div class="dv-right" id="countdown"></div>
+          </div>
+        </div>
+
+        <div class="dv-hero-side">
+          <div class="dv-kicker">Principles</div>
+          <div class="dv-pillrow">
+            <span class="dv-pill"><span class="dv-dot tiny good"></span> Timed</span>
+            <span class="dv-pill"><span class="dv-dot tiny good"></span> Anonymous preview</span>
+            <span class="dv-pill"><span class="dv-dot tiny warn"></span> Throttled pulses</span>
+          </div>
+          <div class="dv-help" style="margin-top: 10px;">
+            Delvee is attentive: clear state, clear affordances, no hidden side effects.
+          </div>
         </div>
       </div>
 
-      <div class="dv-grid">
+      <!-- Main layout: beta-style grid, full-page -->
+      <div class="dv-grid dv-grid-beta" aria-label="Delvee lobby">
+        <!-- Left: controls -->
         <div class="dv-panel">
-          <h2 class="dv-h2">Sign in</h2>
-
-          <div class="dv-field">
-            <label for="email">Email</label>
-            <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+          <div class="dv-panel-head">
+            <h2 class="dv-h2">Controls</h2>
+            <div class="dv-muted" id="sessionMeta">Not in a session</div>
           </div>
 
-          <div class="dv-actions">
-            <button class="dv-btn" id="btn-email" type="button">Send sign-in link</button>
-            <button class="dv-btn dv-btn-primary" id="btn-google" type="button">Google</button>
-          </div>
+          <div class="dv-stack">
+            <div class="dv-slab">
+              <div class="dv-slab-head">
+                <div class="dv-slab-title">Sign in</div>
+                <div class="dv-soft" id="authMeta">—</div>
+              </div>
 
-          <p class="dv-help">Same Firebase project as Setfeed. Your Delvee domain must be authorized (you already did this).</p>
-        </div>
+              <div class="dv-field">
+                <label for="email">Email</label>
+                <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+              </div>
 
-        <div class="dv-panel">
-          <h2 class="dv-h2">Alias</h2>
+              <div class="dv-actions">
+                <button class="dv-btn" id="btn-email" type="button">Send sign-in link</button>
+                <button class="dv-btn dv-btn-primary" id="btn-google" type="button">Google</button>
+              </div>
 
-          <div class="dv-field">
-            <label for="alias">Your alias</label>
-            <input id="alias" type="text" maxlength="18" placeholder="e.g. Sky" />
-          </div>
+              <div class="dv-help">Same Firebase project as Setfeed. Domain already authorized.</div>
+            </div>
 
-          <div class="dv-split">
-            <button class="dv-btn dv-btn-primary" id="btn-create" type="button" disabled>Create lobby</button>
+            <div class="dv-slab">
+              <div class="dv-slab-head">
+                <div class="dv-slab-title">Session</div>
+                <div class="dv-soft">Create or join</div>
+              </div>
 
-            <div class="dv-join">
-              <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" />
-              <button class="dv-btn" id="btn-join" type="button" disabled>Join</button>
+              <div class="dv-field">
+                <label for="alias">Alias (2–18)</label>
+                <input id="alias" type="text" maxlength="18" placeholder="e.g. Sky" />
+              </div>
+
+              <div class="dv-row">
+                <button class="dv-btn dv-btn-primary" id="btn-create" type="button" disabled>Create lobby</button>
+
+                <button class="dv-btn" id="btn-join" type="button" disabled>Join</button>
+                <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" />
+              </div>
+
+              <div class="dv-kv">
+                <div>Session</div><div><code id="kv-session">—</code></div>
+                <div>State</div><div><code id="kv-state">—</code></div>
+                <div>Role</div><div><code id="kv-role">—</code></div>
+              </div>
+
+              <div class="dv-row dv-row-tight">
+                <button class="dv-btn" id="btn-ready" type="button" disabled>Ready</button>
+
+                <div class="dv-host hidden" id="hostControls">
+                  <select id="duration" class="dv-select" aria-label="Duration">
+                    <option value="4">4 min</option>
+                    <option value="5">5 min</option>
+                  </select>
+                  <button class="dv-btn dv-btn-primary" id="btn-start" type="button" disabled>Start</button>
+                </div>
+              </div>
+
+              <div class="dv-help" id="hint">Session codes are shared out-of-band. Alias is locked per session.</div>
+            </div>
+
+            <div class="dv-slab">
+              <div class="dv-slab-head">
+                <div class="dv-slab-title">Pulse</div>
+                <div class="dv-soft" id="pulseMeta">Locked</div>
+              </div>
+
+              <div class="dv-field">
+                <label for="pulseText">Pulse text (≤100)</label>
+                <textarea id="pulseText" maxlength="100" placeholder="Short. vivid."></textarea>
+              </div>
+
+              <div class="dv-row">
+                <button class="dv-btn dv-btn-primary" id="btn-pulse" type="button" disabled>Pulse text</button>
+              </div>
+
+              <div class="dv-row">
+                <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
+                <button class="dv-btn dv-btn-primary" id="btn-image" type="button" disabled>Pulse image</button>
+              </div>
+
+              <div class="dv-help dv-help-tight" id="composerHelp">Pulses are throttled. Keep it flowing.</div>
+            </div>
+
+            <div class="dv-slab">
+              <div class="dv-slab-head">
+                <div class="dv-slab-title">Cooldown chat</div>
+                <div class="dv-soft" id="chatMeta">Opens in cooldown</div>
+              </div>
+
+              <div class="dv-chat" id="chat"></div>
+
+              <div class="dv-chatbox">
+                <input id="chatText" maxlength="300" placeholder="Ask who sent what…" />
+                <button class="dv-btn" id="btn-chat" type="button" disabled>Send</button>
+              </div>
+
+              <div class="dv-help dv-help-tight" id="summaryHint">—</div>
             </div>
           </div>
 
-          <p class="dv-help">Session codes are shared out-of-band. Alias is locked per session.</p>
+          <footer class="dv-footer">
+            <a class="dv-link" href="https://setfeed.app" rel="noreferrer">Setfeed</a>
+            <span class="dv-sep">·</span>
+            <span class="dv-muted">Delvee runs as a separate site.</span>
+          </footer>
+        </div>
+
+        <!-- Right: live preview + participants strip -->
+        <div class="dv-panel">
+          <div class="dv-panel-head">
+            <h2 class="dv-h2">Live preview</h2>
+            <div class="dv-muted" id="feedMeta">—</div>
+          </div>
+
+          <div class="dv-splitpane">
+            <div class="dv-mini">
+              <div class="dv-mini-head">
+                <div class="dv-mini-title">Participants</div>
+                <div class="dv-pill" id="statePill">—</div>
+              </div>
+              <div class="dv-list dv-list-mini" id="participants"></div>
+            </div>
+
+            <div class="dv-feed" id="feed" aria-label="Anonymous feed"></div>
+          </div>
+
+          <div class="dv-help" style="margin-top: 10px;">
+            Preview is anonymous by design. Chat opens during cooldown.
+          </div>
         </div>
       </div>
-
-      <footer class="dv-footer">
-        <a class="dv-link" href="https://setfeed.app" rel="noreferrer">Setfeed</a>
-        <span class="dv-sep">·</span>
-        <span class="dv-muted">Delvee runs as a separate site.</span>
-      </footer>
     </section>
   </main>
 
@@ -139,6 +261,7 @@
     const statusDot = document.getElementById("statusDot");
     const statusTitle = document.getElementById("statusTitle");
     const statusLine = document.getElementById("statusLine");
+    const countdownEl = document.getElementById("countdown");
 
     function setStatus(kind, title, line) {
       statusDot.className = "dv-dot";
@@ -148,44 +271,328 @@
       statusLine.textContent = line;
     }
 
+    function fmtMs(ms) {
+      const s = Math.max(0, Math.floor(ms / 1000));
+      const mm = String(Math.floor(s / 60)).padStart(2, "0");
+      const ss = String(s % 60).padStart(2, "0");
+      return `${mm}:${ss}`;
+    }
+
+    function escapeHtml(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
+    function setHidden(el, hidden) {
+      if (!el) return;
+      el.classList.toggle("hidden", !!hidden);
+    }
+
+    function randomId(prefix) {
+      return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
+    }
+
     // -------------------------
     // Elements
     // -------------------------
     const email = document.getElementById("email");
     const alias = document.getElementById("alias");
-    const sessionId = document.getElementById("sessionId");
+    const sessionInput = document.getElementById("sessionId");
 
     const btnEmail = document.getElementById("btn-email");
     const btnGoogle = document.getElementById("btn-google");
     const btnCreate = document.getElementById("btn-create");
     const btnJoin = document.getElementById("btn-join");
     const btnSignout = document.getElementById("btn-signout");
+    const btnOpenLobby = document.getElementById("btn-open-lobby");
+
+    const kvSession = document.getElementById("kv-session");
+    const kvState = document.getElementById("kv-state");
+    const kvRole = document.getElementById("kv-role");
+    const sessionMeta = document.getElementById("sessionMeta");
+
+    const btnReady = document.getElementById("btn-ready");
+    const hostControls = document.getElementById("hostControls");
+    const durationSel = document.getElementById("duration");
+    const btnStart = document.getElementById("btn-start");
+    const hint = document.getElementById("hint");
+    const statePill = document.getElementById("statePill");
+
+    const participantsEl = document.getElementById("participants");
+
+    const feed = document.getElementById("feed");
+    const feedMeta = document.getElementById("feedMeta");
+
+    const pulseText = document.getElementById("pulseText");
+    const btnPulse = document.getElementById("btn-pulse");
+    const pulseImage = document.getElementById("pulseImage");
+    const btnImage = document.getElementById("btn-image");
+    const composerHelp = document.getElementById("composerHelp");
+    const pulseMeta = document.getElementById("pulseMeta");
+
+    const chat = document.getElementById("chat");
+    const chatText = document.getElementById("chatText");
+    const btnChat = document.getElementById("btn-chat");
+    const chatMeta = document.getElementById("chatMeta");
+    const summaryHint = document.getElementById("summaryHint");
 
     // -------------------------
     // Local persistence
     // -------------------------
     const EMAIL_FOR_SIGNIN_KEY = "dv_email_for_signin";
     const ALIAS_KEY = "dv_alias";
+    const LAST_SESSION_KEY = "dv_last_session";
 
     try {
       const saved = localStorage.getItem(ALIAS_KEY);
       if (saved) alias.value = saved;
     } catch (_) {}
 
+    // -------------------------
+    // Session / realtime
+    // -------------------------
+    let sessionId = "";
+    let unsub = [];
+    let session = null;
+    let me = null;
+    let state = "—";
+    let isHost = false;
+
+    // Idempotency: keep pending ids so retry stays safe
+    let pendingTextPulse = null;
+    let pendingImagePulse = null;
+
+    // Cache download URLs briefly
+    const downloadUrlCache = new Map(); // storagePath -> {url, exp}
+
+    function clearRealtime() {
+      for (const u of unsub) try { u(); } catch (_) {}
+      unsub = [];
+      session = null;
+      me = null;
+      state = "—";
+      isHost = false;
+      renderSessionMeta();
+      renderState("—");
+      feed.innerHTML = "";
+      participantsEl.innerHTML = "";
+      chat.innerHTML = "";
+      feedMeta.textContent = "—";
+      countdownEl.textContent = "";
+    }
+
+    function sref() { return db.collection("delvee_sessions").doc(sessionId); }
+    function pref() { return sref().collection("participants"); }
+    function pulsesRef() { return sref().collection("pulses"); }
+    function chatRef() { return sref().collection("chat"); }
+
+    function renderSessionMeta() {
+      kvSession.textContent = sessionId || "—";
+      kvState.textContent = state || "—";
+      kvRole.textContent = sessionId ? (isHost ? "host" : "participant") : "—";
+      sessionMeta.textContent = sessionId ? `Session ${sessionId}` : "Not in a session";
+      btnOpenLobby.disabled = !(!!auth.currentUser && !!sessionId);
+    }
+
+    function renderState(nextState) {
+      state = nextState || "—";
+      statePill.textContent = state;
+      kvState.textContent = state;
+
+      // Attentive copy (less calm, more directive)
+      if (state === "LOBBY") {
+        hint.textContent = "Confirm you’re here: click Ready. Host starts when everyone is ready.";
+        pulseMeta.textContent = "Locked (starts when RUNNING)";
+        chatMeta.textContent = "Opens in cooldown";
+        summaryHint.textContent = "—";
+      } else if (state === "RUNNING") {
+        hint.textContent = "Pulse window is open. Feed is anonymous. Keep it tight.";
+        pulseMeta.textContent = "Open";
+        chatMeta.textContent = "Closed";
+        summaryHint.textContent = "After cooldown, the memory page unlocks.";
+      } else if (state === "COOLDOWN") {
+        hint.textContent = "Cooldown. Ask who sent what. No new pulses.";
+        pulseMeta.textContent = "Closed";
+        chatMeta.textContent = "Open";
+        summaryHint.textContent = "Summary unlocks when cooldown ends.";
+      } else if (state === "DONE") {
+        hint.textContent = "Done. Summary should be ready (next: animated page).";
+        pulseMeta.textContent = "Closed";
+        chatMeta.textContent = "Open";
+        summaryHint.textContent = "This session is sealed.";
+      } else if (state === "CANCELLED") {
+        hint.textContent = "This lobby expired before it started.";
+        pulseMeta.textContent = "Closed";
+        chatMeta.textContent = "Closed";
+        summaryHint.textContent = "—";
+      } else {
+        hint.textContent = "Create or join a lobby.";
+        pulseMeta.textContent = "Locked";
+        chatMeta.textContent = "Opens in cooldown";
+        summaryHint.textContent = "—";
+      }
+
+      // Enablement
+      const authed = !!auth.currentUser;
+      btnReady.disabled = !(authed && sessionId && state === "LOBBY");
+      btnStart.disabled = !(authed && sessionId && state === "LOBBY" && isHost);
+
+      const canPulse = authed && sessionId && state === "RUNNING";
+      btnPulse.disabled = !(canPulse && pulseText.value.trim().length > 0);
+      btnImage.disabled = !(canPulse && pulseImage.files && pulseImage.files[0]);
+
+      const canChat = authed && sessionId && (state === "COOLDOWN" || state === "DONE");
+      chatText.disabled = !canChat;
+      btnChat.disabled = !(canChat && chatText.value.trim().length > 0);
+
+      setHidden(hostControls, !(authed && sessionId && isHost && state === "LOBBY"));
+
+      renderSessionMeta();
+    }
+
+    function renderCountdown() {
+      if (!session) { countdownEl.textContent = ""; return; }
+      const now = Date.now();
+
+      if (state === "RUNNING" && session.endAtMillis) {
+        const left = session.endAtMillis - now;
+        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
+      } else if (state === "COOLDOWN" && session.cooldownEndsAtMillis) {
+        const left = session.cooldownEndsAtMillis - now;
+        countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
+      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
+        const left = session.reservationExpiresAtMillis - now;
+        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
+      } else {
+        countdownEl.textContent = state;
+      }
+    }
+
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await call({ sessionId, storagePath });
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
+    function renderParticipants(list) {
+      list.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
+
+      const meUid = auth.currentUser?.uid || "";
+      const frag = document.createDocumentFragment();
+
+      for (const p of list) {
+        const row = document.createElement("div");
+        row.className = "dv-person dv-person-mini";
+
+        const name = document.createElement("div");
+        name.className = "dv-person-name";
+        name.textContent = p.alias || "—";
+
+        const badge = document.createElement("div");
+        badge.className = "dv-badge";
+        badge.textContent = p.ready ? "✓" : "·";
+
+        if (p.uid === meUid) {
+          row.classList.add("me");
+          badge.classList.add("me");
+        }
+
+        row.appendChild(name);
+        row.appendChild(badge);
+        frag.appendChild(row);
+      }
+
+      participantsEl.innerHTML = "";
+      participantsEl.appendChild(frag);
+    }
+
+    async function renderFeed(items) {
+      feedMeta.textContent = `${items.length} pulses`;
+
+      const frag = document.createDocumentFragment();
+      for (const it of items) {
+        const card = document.createElement("div");
+        card.className = "dv-pulse";
+
+        const kind = document.createElement("div");
+        kind.className = "dv-pulse-kind";
+        kind.textContent = it.kind === "image" ? "image" : "text";
+        card.appendChild(kind);
+
+        if (it.kind === "text") {
+          const body = document.createElement("div");
+          body.className = "dv-pulse-text";
+          body.textContent = it.text || "";
+          card.appendChild(body);
+        } else if (it.kind === "image" && it.attachment && it.attachment.storagePath) {
+          const imgWrap = document.createElement("div");
+          imgWrap.className = "dv-pulse-imgwrap";
+
+          const img = document.createElement("img");
+          img.className = "dv-pulse-img";
+          img.alt = "Pulse image";
+          imgWrap.appendChild(img);
+          card.appendChild(imgWrap);
+
+          getDownloadUrl(it.attachment.storagePath)
+            .then((url) => { if (url) img.src = url; })
+            .catch(() => {});
+        }
+
+        frag.appendChild(card);
+      }
+
+      feed.innerHTML = "";
+      feed.appendChild(frag);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function renderChat(items) {
+      const frag = document.createDocumentFragment();
+      for (const m of items) {
+        const row = document.createElement("div");
+        row.className = "dv-chat-msg";
+        row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
+        frag.appendChild(row);
+      }
+      chat.innerHTML = "";
+      chat.appendChild(frag);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // -------------------------
+    // Enabled state
+    // -------------------------
+    function refreshEnabled() {
+      const authed = !!auth.currentUser;
+      const hasAlias = alias.value.trim().length >= 1;
+
+      btnCreate.disabled = !(authed && hasAlias);
+      btnJoin.disabled = !(authed && hasAlias && sessionInput.value.trim().length > 0);
+      btnSignout.disabled = !authed;
+
+      // Pulse/chat buttons depend on state too
+      renderState(state);
+    }
+
     alias.addEventListener("input", () => {
       try { localStorage.setItem(ALIAS_KEY, alias.value.trim()); } catch (_) {}
       refreshEnabled();
     });
 
-    function refreshEnabled() {
-      const authed = !!auth.currentUser;
-      const hasAlias = alias.value.trim().length > 0;
-      btnCreate.disabled = !(authed && hasAlias);
-      btnJoin.disabled = !(authed && hasAlias && sessionId.value.trim().length > 0);
-      btnSignout.disabled = !authed;
-    }
-
-    sessionId.addEventListener("input", refreshEnabled);
+    pulseText.addEventListener("input", refreshEnabled);
+    pulseImage.addEventListener("change", refreshEnabled);
+    chatText.addEventListener("input", refreshEnabled);
+    sessionInput.addEventListener("input", refreshEnabled);
     email.addEventListener("input", refreshEnabled);
 
     // -------------------------
@@ -196,8 +603,21 @@
         setStatus("good", "Signed in", user.email || "Ready");
       } else {
         setStatus("warn", "Not signed in", "Sign in to create or join a lobby.");
+        clearRealtime();
+        sessionId = "";
+        renderSessionMeta();
       }
       refreshEnabled();
+
+      // If authed and we have last session, offer quick resume
+      if (user) {
+        try {
+          const last = (localStorage.getItem(LAST_SESSION_KEY) || "").trim().toUpperCase();
+          if (last && !sessionId) {
+            sessionInput.value = last;
+          }
+        } catch (_) {}
+      }
     });
 
     btnGoogle.addEventListener("click", async () => {
@@ -271,11 +691,80 @@
     });
 
     // -------------------------
-    // Create / Join
+    // Session create/join + realtime attach
     // -------------------------
-    function goLobby(sid) {
-      const s = String(sid || "").trim();
-      window.location.href = `./lobby.html?session=${encodeURIComponent(s)}`;
+    async function attachRealtime(nextSessionId) {
+      const sid = String(nextSessionId || "").trim().toUpperCase();
+      if (!sid) return;
+
+      // If switching sessions, detach old listeners
+      if (sessionId && sid !== sessionId) clearRealtime();
+      sessionId = sid;
+
+      try { localStorage.setItem(LAST_SESSION_KEY, sessionId); } catch (_) {}
+
+      renderSessionMeta();
+      setStatus("good", "Connecting…", "Joining and opening realtime.");
+
+      // Ensure participant doc exists (idempotent)
+      const a = alias.value.trim();
+      const join = functions.httpsCallable("delveeJoinSession");
+      await join({ sessionId, alias: a });
+
+      const S = sref();
+      const P = pref();
+      const PU = pulsesRef();
+      const C = chatRef();
+
+      unsub.push(
+        S.onSnapshot((snap) => {
+          const d = snap.data() || {};
+          session = d;
+
+          const st = d.state || "—";
+          isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
+
+          renderState(st);
+          renderCountdown();
+        }, (err) => {
+          console.error(err);
+          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
+        })
+      );
+
+      unsub.push(
+        P.doc(auth.currentUser.uid).onSnapshot((snap) => {
+          me = snap.data() || null;
+          const ready = !!(me && me.ready);
+          btnReady.textContent = ready ? "Unready" : "Ready";
+        })
+      );
+
+      unsub.push(
+        P.onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderParticipants(list);
+        })
+      );
+
+      unsub.push(
+        PU.orderBy("createdAtMillis", "asc").limit(250).onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderFeed(list);
+        })
+      );
+
+      unsub.push(
+        C.orderBy("createdAtMillis", "asc").limit(200).onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderChat(list);
+        })
+      );
+
+      setInterval(renderCountdown, 500);
+
+      setStatus("good", "Connected", "Lobby live. Your feed view is anonymous during RUNNING.");
+      refreshEnabled();
     }
 
     btnCreate.addEventListener("click", async () => {
@@ -292,7 +781,9 @@
         const res = await create({ alias: a });
         const sid = res?.data?.sessionId;
         if (!sid) throw new Error("Missing sessionId");
-        goLobby(sid);
+
+        sessionInput.value = String(sid).toUpperCase();
+        await attachRealtime(sid);
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t create", (e && e.message) ? e.message : "Try again.");
@@ -300,7 +791,7 @@
     });
 
     btnJoin.addEventListener("click", async () => {
-      const sid = sessionId.value.trim();
+      const sid = sessionInput.value.trim();
       const a = alias.value.trim();
       if (!auth.currentUser) return;
       if (!sid || !a) {
@@ -310,14 +801,176 @@
 
       try {
         setStatus("good", "Joining…", "Entering lobby…");
-        const join = functions.httpsCallable("delveeJoinSession");
-        await join({ sessionId: sid, alias: a });
-        goLobby(sid);
+        await attachRealtime(sid);
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
       }
     });
+
+    btnOpenLobby.addEventListener("click", () => {
+      if (!sessionId) return;
+      window.location.href = `./lobby.html?session=${encodeURIComponent(sessionId)}`;
+    });
+
+    // -------------------------
+    // Ready / Start / Pulse / Chat
+    // -------------------------
+    btnReady.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      if (!sessionId) return;
+
+      const next = !(me && me.ready);
+      try {
+        btnReady.disabled = true;
+        const call = functions.httpsCallable("delveeSetReady");
+        await call({ sessionId, ready: next });
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t update", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        btnReady.disabled = false;
+      }
+    });
+
+    btnStart.addEventListener("click", async () => {
+      if (!isHost) return;
+      if (!sessionId) return;
+      try {
+        btnStart.disabled = true;
+        const call = functions.httpsCallable("delveeStartSession");
+        await call({ sessionId, durationMinutes: Number(durationSel.value) });
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t start", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        btnStart.disabled = false;
+      }
+    });
+
+    btnPulse.addEventListener("click", async () => {
+      const text = pulseText.value.trim();
+      if (!text) return;
+
+      if (state !== "RUNNING") {
+        setStatus("warn", "Not running", "Wait for the host to start.");
+        return;
+      }
+
+      try {
+        btnPulse.disabled = true;
+        composerHelp.textContent = "Sending pulse…";
+
+        if (!pendingTextPulse) pendingTextPulse = randomId("p");
+        const call = functions.httpsCallable("delveePulseText");
+        await call({ sessionId, clientPulseId: pendingTextPulse, text });
+
+        pendingTextPulse = null;
+        pulseText.value = "";
+        composerHelp.textContent = "Sent.";
+        refreshEnabled();
+      } catch (e) {
+        console.error(e);
+        composerHelp.textContent = "Couldn’t pulse. Try again.";
+        setStatus("warn", "Pulse failed", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        btnPulse.disabled = false;
+      }
+    });
+
+    btnImage.addEventListener("click", async () => {
+      const file = pulseImage.files && pulseImage.files[0];
+      if (!file) return;
+
+      if (state !== "RUNNING") {
+        setStatus("warn", "Not running", "Wait for the host to start.");
+        return;
+      }
+
+      if (!file.type.startsWith("image/")) {
+        setStatus("warn", "Not an image", "Choose an image file.");
+        return;
+      }
+
+      try {
+        btnImage.disabled = true;
+        composerHelp.textContent = "Uploading image…";
+
+        if (!pendingImagePulse) pendingImagePulse = randomId("img");
+
+        const attachmentId = randomId("a");
+        const create = functions.httpsCallable("delveeCreateImageUpload");
+        const res = await create({
+          sessionId,
+          attachmentId,
+          sizeBytes: file.size,
+          contentType: file.type
+        });
+
+        const { uploadUrl, storagePath } = res.data || {};
+        if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
+
+        const bytes = await file.arrayBuffer();
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: bytes
+        });
+
+        const commit = functions.httpsCallable("delveePulseImageCommit");
+        await commit({
+          sessionId,
+          clientPulseId: pendingImagePulse,
+          attachment: { storagePath, contentType: file.type, sizeBytes: file.size }
+        });
+
+        pendingImagePulse = null;
+        pulseImage.value = "";
+        composerHelp.textContent = "Image sent.";
+        refreshEnabled();
+      } catch (e) {
+        console.error(e);
+        composerHelp.textContent = "Couldn’t pulse image. Try again.";
+        setStatus("warn", "Image failed", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        btnImage.disabled = false;
+      }
+    });
+
+    btnChat.addEventListener("click", async () => {
+      const text = chatText.value.trim();
+      if (!text) return;
+
+      if (state !== "COOLDOWN" && state !== "DONE") {
+        setStatus("warn", "Chat closed", "Chat opens during cooldown.");
+        return;
+      }
+
+      try {
+        btnChat.disabled = true;
+        const call = functions.httpsCallable("delveeChatSend");
+        await call({ sessionId, text });
+        chatText.value = "";
+        refreshEnabled();
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Chat failed", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        btnChat.disabled = false;
+      }
+    });
+
+    // Boot: if URL has ?session=..., auto attach after auth
+    (function bootFromQuery(){
+      const qs = new URLSearchParams(window.location.search);
+      const sid = (qs.get("session") || "").trim().toUpperCase();
+      if (sid) {
+        sessionInput.value = sid;
+      }
+    })();
+
+    // Cleanup
+    window.addEventListener("beforeunload", () => clearRealtime());
 
     refreshEnabled();
   </script>
