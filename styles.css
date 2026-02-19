@@ -1,713 +1,692 @@
-<!doctype html>
-<html lang="en">
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>Lobby — Delvee</title>
-  <meta name="theme-color" content="#0F1114" id="meta-theme-color" />
-
-  <link rel="stylesheet" href="./styles.css" />
-
-  <!-- Firebase -->
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
-  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
-
-  <script>
-    const firebaseConfig = {
-      apiKey: "AIzaSyCECKG-00tijJrt5qvRy3L27ZzE7bocNrU",
-      authDomain: "setfeed-fcd7a.firebaseapp.com",
-      projectId: "setfeed-fcd7a",
-      storageBucket: "setfeed-fcd7a.firebasestorage.app",
-      messagingSenderId: "553573263069",
-      appId: "1:553573263069:web:e5c9884101ca38eaee1d34"
-    };
-
-    if (!firebase.apps || firebase.apps.length === 0) firebase.initializeApp(firebaseConfig);
-
-    const auth = firebase.auth();
-    const functions = firebase.app().functions("europe-west2");
-    const db = firebase.firestore();
-  </script>
-
-  <!-- Theme -->
-  <script>
-    (function(){
-      const THEME_KEY = "sf_theme_mode";
-      const root = document.documentElement;
-
-      function applyTheme(){
-        let stored = "system";
-        try { stored = localStorage.getItem(THEME_KEY) || "system"; } catch (_) {}
-
-        if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
-        else root.removeAttribute("data-theme");
-
-        const effective =
-          root.getAttribute("data-theme") ||
-          (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
-
-        const meta = document.getElementById("meta-theme-color");
-        if (meta) meta.content = (effective === "dark") ? "#0F1114" : "#FFFBFE";
-      }
-
-      applyTheme();
-      window.addEventListener("storage", (e) => { if (e && e.key === THEME_KEY) applyTheme(); });
-    })();
-  </script>
-</head>
-
-<body class="dv-bg">
-  <header class="dv-top">
-    <div class="dv-top-inner">
-      <div class="dv-brand">
-        <a class="dv-mark" href="./index.html" aria-label="Delvee home"></a>
-        <div>
-          <div class="dv-title">Delvee</div>
-          <div class="dv-sub" id="sessionLabel">Lobby</div>
-        </div>
-      </div>
-
-      <div class="dv-top-actions">
-        <button class="dv-chip" id="btn-copy" type="button">Copy code</button>
-        <button class="dv-chip" id="btn-leave" type="button">Leave</button>
-      </div>
-    </div>
-  </header>
-
-  <main class="dv-wrap dv-wrap-wide">
-    <section class="dv-card dv-card-wide">
-
-      <div class="dv-status dv-status-tight" id="status">
-        <span class="dv-dot" id="statusDot"></span>
-        <div>
-          <div class="dv-status-title" id="statusTitle">Connecting…</div>
-          <div class="dv-status-line" id="statusLine">Preparing realtime lobby.</div>
-        </div>
-        <div class="dv-right" id="countdown"></div>
-      </div>
-
-      <div class="dv-layout">
-        <!-- Left: participants -->
-        <aside class="dv-side">
-          <div class="dv-panel">
-            <div class="dv-panel-head">
-              <h2 class="dv-h2">Participants</h2>
-              <div class="dv-pill" id="statePill">—</div>
-            </div>
-            <div class="dv-list" id="participants"></div>
-
-            <div class="dv-hr"></div>
-
-            <div class="dv-actions dv-actions-compact">
-              <button class="dv-btn" id="btn-ready" type="button">Ready</button>
-
-              <div class="dv-host hidden" id="hostControls">
-                <select id="duration" class="dv-select" aria-label="Duration">
-                  <option value="4">4 min</option>
-                  <option value="5">5 min</option>
-                </select>
-                <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
-              </div>
-            </div>
-
-            <p class="dv-help" id="hint">Anonymous live preview during RUNNING. Chat opens during cooldown.</p>
-          </div>
-        </aside>
-
-        <!-- Center: live feed + composer -->
-        <section class="dv-main">
-          <div class="dv-panel">
-            <div class="dv-panel-head">
-              <h2 class="dv-h2">Live preview</h2>
-              <div class="dv-muted" id="feedMeta">—</div>
-            </div>
-
-            <div class="dv-feed" id="feed"></div>
-
-            <div class="dv-composer" id="composer">
-              <div class="dv-compose-row">
-                <textarea id="pulseText" maxlength="100" placeholder="Write a pulse (≤100 chars)"></textarea>
-                <button class="dv-btn dv-btn-primary" id="btn-pulse" type="button">Pulse</button>
-              </div>
-
-              <div class="dv-compose-row dv-compose-row2">
-                <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
-                <button class="dv-btn" id="btn-image" type="button">Pulse image</button>
-              </div>
-
-              <div class="dv-help dv-help-tight" id="composerHelp">Pulses are throttled. Keep it flowing.</div>
-            </div>
-          </div>
-        </section>
-
-        <!-- Right: chat (cooldown/done only) -->
-        <aside class="dv-side">
-          <div class="dv-panel">
-            <div class="dv-panel-head">
-              <h2 class="dv-h2">Chat</h2>
-              <div class="dv-muted" id="chatMeta">Opens in cooldown</div>
-            </div>
-
-            <div class="dv-chat" id="chat"></div>
-
-            <div class="dv-chatbox">
-              <input id="chatText" maxlength="300" placeholder="Ask who sent what…" />
-              <button class="dv-btn" id="btn-chat" type="button">Send</button>
-            </div>
-
-            <div class="dv-help dv-help-tight">Chat is rate limited. Keep it calm.</div>
-          </div>
-        </aside>
-      </div>
-
-    </section>
-  </main>
-
-  <script>
-    // -------------------------
-    // Utilities
-    // -------------------------
-    const qs = new URLSearchParams(window.location.search);
-    const sessionId = (qs.get("session") || "").trim().toUpperCase();
-
-    const ALIAS_KEY = "dv_alias";
-    const myAlias = (() => {
-      try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
-    })();
-
-    function setStatus(kind, title, line) {
-      const dot = document.getElementById("statusDot");
-      const t = document.getElementById("statusTitle");
-      const l = document.getElementById("statusLine");
-      dot.className = "dv-dot";
-      if (kind === "good") dot.classList.add("good");
-      if (kind === "warn") dot.classList.add("warn");
-      t.textContent = title;
-      l.textContent = line;
-    }
-
-    function fmtMs(ms) {
-      const s = Math.max(0, Math.floor(ms / 1000));
-      const mm = String(Math.floor(s / 60)).padStart(2, "0");
-      const ss = String(s % 60).padStart(2, "0");
-      return `${mm}:${ss}`;
-    }
-
-    function randomId(prefix) {
-      return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
-    }
-
-    function escapeHtml(s) {
-      return String(s || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-    }
-
-    function setHidden(el, hidden) {
-      if (!el) return;
-      el.classList.toggle("hidden", !!hidden);
-    }
-
-    if (!sessionId) {
-      setStatus("warn", "Missing session", "Open a lobby from Delvee home.");
-      setTimeout(() => window.location.href = "./index.html", 800);
-    }
-
-    document.getElementById("sessionLabel").textContent = sessionId ? `Session ${sessionId}` : "Lobby";
-
-    // -------------------------
-    // Elements
-    // -------------------------
-    const btnCopy = document.getElementById("btn-copy");
-    const btnLeave = document.getElementById("btn-leave");
-
-    const participantsEl = document.getElementById("participants");
-    const statePill = document.getElementById("statePill");
-    const hint = document.getElementById("hint");
-
-    const btnReady = document.getElementById("btn-ready");
-    const hostControls = document.getElementById("hostControls");
-    const btnStart = document.getElementById("btn-start");
-    const durationSel = document.getElementById("duration");
-
-    const countdownEl = document.getElementById("countdown");
-
-    const feed = document.getElementById("feed");
-    const feedMeta = document.getElementById("feedMeta");
-
-    const composer = document.getElementById("composer");
-    const pulseText = document.getElementById("pulseText");
-    const btnPulse = document.getElementById("btn-pulse");
-    const pulseImage = document.getElementById("pulseImage");
-    const btnImage = document.getElementById("btn-image");
-    const composerHelp = document.getElementById("composerHelp");
-
-    const chat = document.getElementById("chat");
-    const chatText = document.getElementById("chatText");
-    const btnChat = document.getElementById("btn-chat");
-    const chatMeta = document.getElementById("chatMeta");
-
-    // -------------------------
-    // Firestore refs
-    // -------------------------
-    const sref = db.collection("delvee_sessions").doc(sessionId);
-    const pref = sref.collection("participants");
-    const pulsesRef = sref.collection("pulses");
-    const chatRef = sref.collection("chat");
-
-    // -------------------------
-    // Local state
-    // -------------------------
-    let unsub = [];
-    let session = null;
-    let me = null;
-    let isHost = false;
-    let state = "—";
-
-    // Idempotency: keep the current pending pulse id if a retry happens
-    let pendingTextPulse = null;
-    let pendingImagePulse = null;
-
-    // Cache download URLs briefly to avoid refetching while scrolling
-    const downloadUrlCache = new Map(); // storagePath -> {url, exp}
-
-    // -------------------------
-    // Actions
-    // -------------------------
-    btnCopy.addEventListener("click", async () => {
-      try {
-        await navigator.clipboard.writeText(sessionId);
-        setStatus("good", "Copied", "Session code copied.");
-      } catch (_) {
-        setStatus("warn", "Copy failed", "Copy manually from the header.");
-      }
-    });
-
-    btnLeave.addEventListener("click", async () => {
-      try {
-        const leave = functions.httpsCallable("delveeLeaveSession");
-        await leave({ sessionId });
-      } catch (_) {}
-      window.location.href = "./index.html";
-    });
-
-    btnReady.addEventListener("click", async () => {
-      if (!auth.currentUser) return;
-
-      const next = !(me && me.ready);
-      try {
-        btnReady.disabled = true;
-        const call = functions.httpsCallable("delveeSetReady");
-        await call({ sessionId, ready: next });
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t update", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        btnReady.disabled = false;
-      }
-    });
-
-    btnStart.addEventListener("click", async () => {
-      if (!isHost) return;
-      try {
-        btnStart.disabled = true;
-        const call = functions.httpsCallable("delveeStartSession");
-        await call({ sessionId, durationMinutes: Number(durationSel.value) });
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t start", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        btnStart.disabled = false;
-      }
-    });
-
-    btnPulse.addEventListener("click", async () => {
-      const text = pulseText.value.trim();
-      if (!text) return;
-
-      // Only allow when RUNNING
-      if (state !== "RUNNING") {
-        setStatus("warn", "Not running", "Wait for the host to start.");
-        return;
-      }
-
-      try {
-        btnPulse.disabled = true;
-        composerHelp.textContent = "Sending pulse…";
-
-        if (!pendingTextPulse) pendingTextPulse = randomId("p");
-        const call = functions.httpsCallable("delveePulseText");
-        await call({ sessionId, clientPulseId: pendingTextPulse, text });
-
-        // success resets pending and clears input
-        pendingTextPulse = null;
-        pulseText.value = "";
-        composerHelp.textContent = "Pulsed.";
-      } catch (e) {
-        console.error(e);
-        // keep pendingTextPulse so retry is idempotent
-        composerHelp.textContent = "Couldn’t pulse. Try again.";
-        setStatus("warn", "Pulse failed", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        btnPulse.disabled = false;
-      }
-    });
-
-    btnImage.addEventListener("click", async () => {
-      const file = pulseImage.files && pulseImage.files[0];
-      if (!file) return;
-
-      if (state !== "RUNNING") {
-        setStatus("warn", "Not running", "Wait for the host to start.");
-        return;
-      }
-
-      if (!file.type.startsWith("image/")) {
-        setStatus("warn", "Not an image", "Choose an image file.");
-        return;
-      }
-
-      try {
-        btnImage.disabled = true;
-        composerHelp.textContent = "Uploading image…";
-
-        if (!pendingImagePulse) pendingImagePulse = randomId("img");
-
-        const attachmentId = randomId("a");
-        const create = functions.httpsCallable("delveeCreateImageUpload");
-        const res = await create({
-          sessionId,
-          attachmentId,
-          sizeBytes: file.size,
-          contentType: file.type
-        });
-
-        const { uploadUrl, storagePath } = res.data || {};
-        if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
-
-        // Upload bytes to signed URL (encrypted can be added later; MVP is plaintext)
-        const bytes = await file.arrayBuffer();
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: bytes
-        });
-
-        // Commit pulse
-        const commit = functions.httpsCallable("delveePulseImageCommit");
-        await commit({
-          sessionId,
-          clientPulseId: pendingImagePulse,
-          attachment: {
-            storagePath,
-            contentType: file.type,
-            sizeBytes: file.size
-            // ivB64/saltB64 optional in this MVP
-          }
-        });
-
-        pendingImagePulse = null;
-        pulseImage.value = "";
-        composerHelp.textContent = "Image pulsed.";
-      } catch (e) {
-        console.error(e);
-        composerHelp.textContent = "Couldn’t pulse image. Try again.";
-        setStatus("warn", "Image failed", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        btnImage.disabled = false;
-      }
-    });
-
-    btnChat.addEventListener("click", async () => {
-      const text = chatText.value.trim();
-      if (!text) return;
-
-      if (state !== "COOLDOWN" && state !== "DONE") {
-        setStatus("warn", "Chat closed", "Chat opens during cooldown.");
-        return;
-      }
-
-      try {
-        btnChat.disabled = true;
-        const call = functions.httpsCallable("delveeChatSend");
-        await call({ sessionId, text });
-        chatText.value = "";
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Chat failed", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        btnChat.disabled = false;
-      }
-    });
-
-    // -------------------------
-    // Realtime rendering
-    // -------------------------
-    function renderState(nextState) {
-      state = nextState || "—";
-      statePill.textContent = state;
-
-      // Copy tone: calm + clear
-      if (state === "LOBBY") {
-        hint.textContent = "Click ready. When everyone is ready, the host starts the pulse window.";
-      } else if (state === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      } else if (state === "COOLDOWN") {
-        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
-      } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready (next: animated view).";
-      } else if (state === "CANCELLED") {
-        hint.textContent = "This lobby expired before it started.";
-      } else {
-        hint.textContent = "—";
-      }
-
-      // Composer only active during RUNNING
-      setHidden(composer, state !== "RUNNING");
-
-      // Chat only during COOLDOWN/DONE
-      const chatOpen = (state === "COOLDOWN" || state === "DONE");
-      chatText.disabled = !chatOpen;
-      btnChat.disabled = !chatOpen;
-      chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
-    }
-
-    function renderCountdown() {
-      if (!session) { countdownEl.textContent = ""; return; }
-
-      const now = Date.now();
-      if (state === "RUNNING" && session.endAtMillis) {
-        const left = session.endAtMillis - now;
-        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
-      } else if (state === "COOLDOWN" && session.cooldownEndsAtMillis) {
-        const left = session.cooldownEndsAtMillis - now;
-        countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
-      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
-        const left = session.reservationExpiresAtMillis - now;
-        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
-      } else {
-        countdownEl.textContent = state;
-      }
-    }
-
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url; // small safety buffer
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
-    function renderParticipants(list) {
-      // Sort by aliasLower for stable calm order
-      list.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
-
-      const meUid = auth.currentUser?.uid || "";
-      const frag = document.createDocumentFragment();
-
-      for (const p of list) {
-        const row = document.createElement("div");
-        row.className = "dv-person";
-
-        const left = document.createElement("div");
-        left.className = "dv-person-left";
-
-        const name = document.createElement("div");
-        name.className = "dv-person-name";
-        name.textContent = p.alias || "—";
-
-        const meta = document.createElement("div");
-        meta.className = "dv-person-meta";
-        const ready = p.ready ? "ready" : "not ready";
-        const pulses = typeof p.pulsesCount === "number" ? p.pulsesCount : 0;
-        meta.textContent = `${ready} · ${pulses} pulses`;
-
-        left.appendChild(name);
-        left.appendChild(meta);
-
-        const badge = document.createElement("div");
-        badge.className = "dv-badge";
-        badge.textContent = p.ready ? "✓" : "·";
-
-        if (p.uid === meUid) {
-          row.classList.add("me");
-          badge.classList.add("me");
-        }
-
-        row.appendChild(left);
-        row.appendChild(badge);
-        frag.appendChild(row);
-      }
-
-      participantsEl.innerHTML = "";
-      participantsEl.appendChild(frag);
-    }
-
-    async function renderFeed(items) {
-      feedMeta.textContent = `${items.length} pulses`;
-
-      // newest at bottom for “flow”
-      const frag = document.createDocumentFragment();
-
-      for (const it of items) {
-        const card = document.createElement("div");
-        card.className = "dv-pulse";
-
-        const kind = document.createElement("div");
-        kind.className = "dv-pulse-kind";
-        kind.textContent = it.kind === "image" ? "image" : "text";
-
-        card.appendChild(kind);
-
-        if (it.kind === "text") {
-          const body = document.createElement("div");
-          body.className = "dv-pulse-text";
-          body.textContent = it.text || "";
-          card.appendChild(body);
-        } else if (it.kind === "image" && it.attachment && it.attachment.storagePath) {
-          const imgWrap = document.createElement("div");
-          imgWrap.className = "dv-pulse-imgwrap";
-
-          const img = document.createElement("img");
-          img.className = "dv-pulse-img";
-          img.alt = "Pulse image";
-
-          imgWrap.appendChild(img);
-          card.appendChild(imgWrap);
-
-          // Lazy fetch a signed URL
-          getDownloadUrl(it.attachment.storagePath)
-            .then((url) => { if (url) img.src = url; })
-            .catch(() => {});
-        }
-
-        frag.appendChild(card);
-      }
-
-      feed.innerHTML = "";
-      feed.appendChild(frag);
-
-      // keep scrolled near bottom unless user scrolled up
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function renderChat(items) {
-      const frag = document.createDocumentFragment();
-      for (const m of items) {
-        const row = document.createElement("div");
-        row.className = "dv-chat-msg";
-        row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
-        frag.appendChild(row);
-      }
-      chat.innerHTML = "";
-      chat.appendChild(frag);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    // -------------------------
-    // Boot: ensure signed in + join
-    // -------------------------
-    async function boot() {
-      if (!sessionId) return;
-
-      setStatus("good", "Connecting…", "Signing in and joining the session.");
-
-      // Must be authed
-      const user = auth.currentUser;
-      if (!user) {
-        setStatus("warn", "Sign in required", "Return to home and sign in first.");
-        setTimeout(() => window.location.href = "./index.html", 900);
-        return;
-      }
-
-      if (!myAlias) {
-        setStatus("warn", "Alias missing", "Return to home and set an alias.");
-        setTimeout(() => window.location.href = "./index.html", 900);
-        return;
-      }
-
-      // Ensure participant doc exists (idempotent join)
-      try {
-        const join = functions.httpsCallable("delveeJoinSession");
-        await join({ sessionId, alias: myAlias });
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
-        return;
-      }
-
-      setStatus("good", "Connected", "Realtime lobby active.");
-
-      // Session doc listener
-      unsub.push(
-        sref.onSnapshot((snap) => {
-          const d = snap.data() || {};
-          session = d;
-
-          const st = d.state || "—";
-          renderState(st);
-
-          isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
-          setHidden(hostControls, !isHost);
-
-          renderCountdown();
-        }, (err) => {
-          console.error(err);
-          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
-        })
-      );
-
-      // My participant doc
-      unsub.push(
-        pref.doc(auth.currentUser.uid).onSnapshot((snap) => {
-          me = snap.data() || null;
-          const ready = !!(me && me.ready);
-          btnReady.textContent = ready ? "Unready" : "Ready";
-        })
-      );
-
-      // Participants list
-      unsub.push(
-        pref.onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderParticipants(list);
-        })
-      );
-
-      // Pulses feed (limit for performance)
-      unsub.push(
-        pulsesRef.orderBy("createdAtMillis", "asc").limit(250).onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderFeed(list);
-        })
-      );
-
-      // Chat feed
-      unsub.push(
-        chatRef.orderBy("createdAtMillis", "asc").limit(200).onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderChat(list);
-        })
-      );
-
-      // Countdown tick
-      setInterval(renderCountdown, 500);
-    }
-
-    auth.onAuthStateChanged(() => boot());
-
-    window.addEventListener("beforeunload", () => {
-      for (const u of unsub) try { u(); } catch (_) {}
-      unsub = [];
-    });
-  </script>
-</body>
-</html>
+/* delvee/styles.css (FULL FILE REPLACEMENT)
+   Delvee = attentive, timed, deterministic.
+   Less “calm spa”, more “clear instrument panel”.
+*/
+
+:root{
+  /* Light */
+  --dv-bg: #FFFBFE;
+  --dv-surface: #FFFFFF;
+  --dv-surface-2: #F6F4FA;
+  --dv-surface-3: #EEEAF6;
+  --dv-line: rgba(28,27,31,0.12);
+
+  --dv-text: rgba(28,27,31,0.92);
+  --dv-muted: rgba(73,69,79,0.84);
+  --dv-soft: rgba(73,69,79,0.70);
+
+  /* Delvee accent: attentive violet-blue */
+  --dv-primary: #6C63FF;
+  --dv-on-primary: #FFFFFF;
+  --dv-primary-soft: rgba(108,99,255,0.16);
+
+  --dv-good: #0F7B3D;
+  --dv-warn: #B3261E;
+
+  --dv-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
+
+  --dv-s-1: 8px;
+  --dv-s-2: 12px;
+  --dv-s-3: 16px;
+  --dv-s-4: 20px;
+  --dv-s-5: 26px;
+  --dv-s-6: 34px;
+  --dv-s-7: 44px;
+  --dv-s-8: 58px;
+
+  --dv-r-1: 12px;
+  --dv-r-2: 16px;
+  --dv-r-3: 20px;
+
+  --dv-max: 1100px;
+  --dv-max-wide: 1220px;
+
+  --dv-fw-regular: 440;
+  --dv-fw-medium: 520;
+  --dv-fw-bold: 620;
+}
+
+@media (prefers-color-scheme: dark){
+  :root{
+    --dv-bg: #0F1114;
+    --dv-surface: #12151A;
+    --dv-surface-2: #151923;
+    --dv-surface-3: #1A2030;
+    --dv-line: rgba(255,255,255,0.12);
+
+    --dv-text: rgba(255,255,255,0.92);
+    --dv-muted: rgba(203,208,216,0.86);
+    --dv-soft: rgba(203,208,216,0.68);
+
+    --dv-primary: #7A72FF;
+    --dv-on-primary: #FFFFFF;
+    --dv-primary-soft: rgba(122,114,255,0.22);
+
+    --dv-good: #86EFAC;
+    --dv-warn: #F2B8B5;
+  }
+}
+
+:root[data-theme="light"]{
+  --dv-bg: #FFFBFE;
+  --dv-surface: #FFFFFF;
+  --dv-surface-2: #F6F4FA;
+  --dv-surface-3: #EEEAF6;
+  --dv-line: rgba(28,27,31,0.12);
+
+  --dv-text: rgba(28,27,31,0.92);
+  --dv-muted: rgba(73,69,79,0.84);
+  --dv-soft: rgba(73,69,79,0.70);
+
+  --dv-primary: #6C63FF;
+  --dv-on-primary: #FFFFFF;
+  --dv-primary-soft: rgba(108,99,255,0.16);
+
+  --dv-good: #0F7B3D;
+  --dv-warn: #B3261E;
+}
+
+:root[data-theme="dark"]{
+  --dv-bg: #0F1114;
+  --dv-surface: #12151A;
+  --dv-surface-2: #151923;
+  --dv-surface-3: #1A2030;
+  --dv-line: rgba(255,255,255,0.12);
+
+  --dv-text: rgba(255,255,255,0.92);
+  --dv-muted: rgba(203,208,216,0.86);
+  --dv-soft: rgba(203,208,216,0.68);
+
+  --dv-primary: #7A72FF;
+  --dv-on-primary: #FFFFFF;
+  --dv-primary-soft: rgba(122,114,255,0.22);
+
+  --dv-good: #86EFAC;
+  --dv-warn: #F2B8B5;
+}
+
+/* Base */
+*{ box-sizing: border-box; }
+html, body{
+  margin: 0;
+  padding: 0;
+  background: var(--dv-bg);
+  color: var(--dv-text);
+  font-family: var(--dv-font);
+  font-weight: var(--dv-fw-regular);
+}
+a{ color: var(--dv-primary); text-decoration: none; }
+a:hover{ text-decoration: underline; }
+.hidden{ display:none !important; }
+::selection{ background: var(--dv-primary-soft); }
+
+/* Background */
+.dv-bg{
+  min-height: 100vh;
+  background:
+    radial-gradient(900px 520px at 14% -12%,
+      color-mix(in srgb, var(--dv-primary) 10%, transparent) 0%,
+      transparent 56%),
+    radial-gradient(780px 520px at 86% 0%,
+      rgba(0,0,0,0.06) 0%,
+      transparent 62%),
+    linear-gradient(180deg,
+      rgba(255,255,255,0.03) 0%,
+      rgba(255,255,255,0.00) 30%);
+}
+:root[data-theme="dark"] .dv-bg,
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .dv-bg{
+    background:
+      radial-gradient(900px 520px at 14% -12%,
+        color-mix(in srgb, var(--dv-primary) 12%, transparent) 0%,
+        transparent 58%),
+      radial-gradient(780px 520px at 86% 0%,
+        rgba(255,255,255,0.05) 0%,
+        transparent 62%),
+      linear-gradient(180deg,
+        rgba(255,255,255,0.022) 0%,
+        rgba(255,255,255,0.00) 30%);
+  }
+}
+
+/* Top bar */
+.dv-top{
+  position: sticky;
+  top: 0;
+  z-index: 30;
+  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--dv-bg) 86%, transparent);
+  border-bottom: 1px solid var(--dv-line);
+}
+.dv-top-inner{
+  max-width: var(--dv-max-wide);
+  margin: 0 auto;
+  padding: 12px var(--dv-s-4);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--dv-s-3);
+}
+.dv-brand{
+  display:flex;
+  align-items:center;
+  gap: 12px;
+}
+.dv-mark{
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background:
+    radial-gradient(18px 18px at 30% 30%,
+      color-mix(in srgb, var(--dv-primary) 80%, white) 0%,
+      transparent 70%),
+    color-mix(in srgb, var(--dv-surface-3) 66%, transparent);
+  border: 1px solid color-mix(in srgb, var(--dv-primary) 20%, var(--dv-line));
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.22) inset,
+    0 16px 30px rgba(0,0,0,0.12);
+}
+.dv-title{
+  font-weight: var(--dv-fw-bold);
+  letter-spacing: -0.18px;
+  font-size: 15px;
+  line-height: 1;
+}
+.dv-sub{
+  color: var(--dv-soft);
+  font-size: 13px;
+  margin-top: 4px;
+}
+.dv-top-actions{
+  display:flex;
+  align-items:center;
+  gap: 10px;
+}
+
+/* Layout */
+.dv-wrap{
+  max-width: var(--dv-max);
+  margin: 0 auto;
+  padding: var(--dv-s-6) var(--dv-s-4) var(--dv-s-8);
+}
+.dv-wrap-wide{
+  max-width: var(--dv-max-wide);
+}
+
+/* Card */
+.dv-card{
+  background: color-mix(in srgb, var(--dv-surface) 90%, transparent);
+  border: 1px solid var(--dv-line);
+  border-radius: var(--dv-r-3);
+  padding: var(--dv-s-6);
+  box-shadow:
+    0 1px 0 rgba(255,255,255,0.22) inset,
+    0 18px 46px rgba(0,0,0,0.10);
+}
+:root[data-theme="dark"] .dv-card,
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .dv-card{
+    background: color-mix(in srgb, var(--dv-surface-2) 86%, transparent);
+    box-shadow:
+      0 1px 0 rgba(255,255,255,0.05) inset,
+      0 22px 52px rgba(0,0,0,0.32);
+  }
+}
+.dv-card-wide{ padding: var(--dv-s-6); }
+
+/* Typography */
+.dv-h1{
+  margin: 0 0 var(--dv-s-2) 0;
+  font-size: 28px;
+  letter-spacing: -0.44px;
+  line-height: 1.14;
+  font-weight: var(--dv-fw-bold);
+}
+.dv-lead{
+  margin: 0 0 var(--dv-s-4) 0;
+  color: var(--dv-muted);
+  font-size: 14.8px;
+  line-height: 1.75;
+  max-width: 78ch;
+}
+.dv-h2{
+  margin: 0;
+  font-size: 14px;
+  letter-spacing: -0.10px;
+  font-weight: var(--dv-fw-bold);
+}
+.dv-muted{ color: var(--dv-muted); font-size: 13.2px; }
+.dv-soft{ color: var(--dv-soft); font-size: 13px; }
+
+/* Hero */
+.dv-hero{
+  display: grid;
+  grid-template-columns: 1fr 360px;
+  gap: var(--dv-s-6);
+  align-items: start;
+  margin-bottom: var(--dv-s-5);
+}
+.dv-hero-side{
+  margin-top: 4px;
+}
+.dv-kicker{
+  color: var(--dv-soft);
+  font-size: 12px;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  margin-bottom: 10px;
+}
+.dv-pillrow{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+}
+.dv-pill{
+  display:inline-flex;
+  align-items:center;
+  gap: 8px;
+  padding: 8px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 24%, transparent);
+  color: var(--dv-soft);
+  font-size: 12.8px;
+}
+
+/* Status */
+.dv-status{
+  margin-top: var(--dv-s-4);
+  border-radius: var(--dv-r-2);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 18%, transparent);
+  padding: 12px;
+  display:flex;
+  gap: 12px;
+  align-items: center;
+}
+.dv-status-title{
+  color: var(--dv-text);
+  font-weight: var(--dv-fw-bold);
+  font-size: 14px;
+  letter-spacing: -0.08px;
+}
+.dv-status-line{
+  color: var(--dv-muted);
+  font-size: 13.6px;
+  margin-top: 3px;
+  line-height: 1.55;
+}
+.dv-right{
+  margin-left: auto;
+  color: var(--dv-soft);
+  font-weight: var(--dv-fw-medium);
+  font-size: 13px;
+  white-space: nowrap;
+}
+.dv-dot{
+  width: 10px;
+  height: 10px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dv-soft) 70%, transparent);
+}
+.dv-dot.good{ background: var(--dv-good); }
+.dv-dot.warn{ background: color-mix(in srgb, var(--dv-warn) 82%, #D67A7A); }
+.dv-dot.tiny{ width: 8px; height: 8px; }
+
+/* Panels */
+.dv-panel{
+  border-radius: var(--dv-r-3);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-2) 84%, transparent);
+  padding: var(--dv-s-5);
+}
+.dv-panel-head{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: var(--dv-s-3);
+}
+.dv-stack{ display:grid; gap: var(--dv-s-3); }
+
+/* “Slab” blocks (beta-layout feel) */
+.dv-slab{
+  border-radius: var(--dv-r-2);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 20%, transparent);
+  padding: var(--dv-s-4);
+}
+.dv-slab-head{
+  display:flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.dv-slab-title{
+  font-weight: var(--dv-fw-bold);
+  color: var(--dv-text);
+  font-size: 13.6px;
+  letter-spacing: -0.08px;
+}
+
+/* Grid */
+.dv-grid{
+  display:grid;
+  grid-template-columns: 1.05fr 0.95fr;
+  gap: var(--dv-s-4);
+  align-items: start;
+}
+.dv-grid-beta{
+  margin-top: var(--dv-s-4);
+}
+@media (max-width: 980px){
+  .dv-hero{ grid-template-columns: 1fr; }
+  .dv-grid{ grid-template-columns: 1fr; }
+}
+
+/* Forms */
+.dv-field{ display:flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.dv-field label{ color: var(--dv-soft); font-size: 13px; }
+input, textarea, select{
+  width: 100%;
+  border-radius: var(--dv-r-1);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 88%, transparent);
+  color: var(--dv-text);
+  padding: 10px 12px;
+  font-size: 14.4px;
+  font-family: var(--dv-font);
+  outline: none;
+}
+textarea{ min-height: 90px; resize: vertical; }
+input:focus, textarea:focus, select:focus{
+  border-color: color-mix(in srgb, var(--dv-primary) 56%, var(--dv-line));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-primary) 14%, transparent);
+}
+.dv-select{ min-width: 88px; }
+
+/* Buttons */
+.dv-actions{
+  display:flex;
+  flex-wrap:wrap;
+  gap: 10px;
+  margin-top: 12px;
+  align-items: center;
+}
+.dv-btn{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  gap: 8px;
+  padding: 10px 14px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 14%, transparent);
+  color: var(--dv-text);
+  font-size: 14px;
+  cursor: pointer;
+  user-select: none;
+  transition: background 120ms ease, transform 80ms ease, border-color 120ms ease, box-shadow 120ms ease;
+}
+.dv-btn:hover{
+  background: color-mix(in srgb, var(--dv-surface-3) 20%, transparent);
+}
+.dv-btn:active{ transform: translateY(0.5px); }
+.dv-btn:disabled{
+  cursor:not-allowed;
+  transform:none;
+  opacity: 0.58;
+}
+.dv-btn-primary{
+  background: var(--dv-primary);
+  color: var(--dv-on-primary);
+  border-color: color-mix(in srgb, var(--dv-primary) 54%, var(--dv-line));
+  box-shadow: 0 12px 28px rgba(0,0,0,0.14);
+}
+.dv-btn-primary:hover{
+  background: color-mix(in srgb, var(--dv-primary) 92%, white);
+}
+:root[data-theme="dark"] .dv-btn-primary:hover{
+  background: color-mix(in srgb, var(--dv-primary) 90%, black);
+}
+@media (prefers-color-scheme: dark){
+  :root:not([data-theme="light"]) .dv-btn-primary:hover{
+    background: color-mix(in srgb, var(--dv-primary) 90%, black);
+  }
+}
+
+/* Chips */
+.dv-chip{
+  appearance:none;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 16%, transparent);
+  color: var(--dv-soft);
+  border-radius: 999px;
+  padding: 9px 12px;
+  cursor:pointer;
+  font-size: 13.2px;
+}
+.dv-chip:hover{
+  background: color-mix(in srgb, var(--dv-surface-3) 22%, transparent);
+  color: var(--dv-text);
+}
+.dv-chip:disabled{ cursor:not-allowed; opacity: 0.55; }
+
+/* Rows */
+.dv-row{
+  display:flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  align-items: center;
+  margin-top: 10px;
+}
+.dv-row-tight{ margin-top: 12px; }
+.dv-row input[type="text"]{ flex: 1 1 220px; min-width: 180px; }
+
+/* KV */
+.dv-kv{
+  display:grid;
+  grid-template-columns: 110px 1fr;
+  gap: 8px 12px;
+  margin-top: 12px;
+  font-size: 13.6px;
+  color: var(--dv-muted);
+}
+.dv-kv code{
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12.4px;
+  color: var(--dv-text);
+  opacity: 0.92;
+}
+
+/* Feed + pulses */
+.dv-feed{
+  border-radius: var(--dv-r-2);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 84%, transparent);
+  min-height: 540px;
+  max-height: 70vh;
+  overflow: auto;
+  padding: 12px;
+}
+.dv-pulse{
+  border-radius: 14px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 16%, transparent);
+  padding: 12px;
+  margin-bottom: 10px;
+}
+.dv-pulse-kind{
+  font-size: 12px;
+  color: var(--dv-soft);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+.dv-pulse-text{
+  color: var(--dv-text);
+  font-size: 14.4px;
+  line-height: 1.6;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dv-pulse-imgwrap{
+  border-radius: 12px;
+  overflow: hidden;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-2) 76%, transparent);
+}
+.dv-pulse-img{
+  display:block;
+  width: 100%;
+  height: auto;
+}
+
+/* Participants mini */
+.dv-splitpane{
+  display:grid;
+  grid-template-rows: auto 1fr;
+  gap: 12px;
+}
+.dv-mini{
+  border-radius: var(--dv-r-2);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 16%, transparent);
+  padding: 12px;
+}
+.dv-mini-head{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+.dv-mini-title{
+  font-weight: var(--dv-fw-bold);
+  font-size: 13.4px;
+  color: var(--dv-text);
+}
+.dv-pill{
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+  padding: 6px 10px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-primary) 14%, var(--dv-surface-3));
+  color: var(--dv-text);
+  font-size: 12.6px;
+  font-weight: var(--dv-fw-medium);
+}
+.dv-list{
+  display:grid;
+  gap: 8px;
+}
+.dv-list-mini{
+  grid-template-columns: 1fr 1fr;
+}
+@media (max-width: 720px){
+  .dv-list-mini{ grid-template-columns: 1fr; }
+}
+.dv-person{
+  display:flex;
+  align-items:center;
+  justify-content: space-between;
+  gap: 10px;
+  border-radius: 12px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 84%, transparent);
+  padding: 10px 12px;
+}
+.dv-person-mini{
+  padding: 8px 10px;
+}
+.dv-person.me{
+  border-color: color-mix(in srgb, var(--dv-primary) 34%, var(--dv-line));
+  background: color-mix(in srgb, var(--dv-primary) 10%, var(--dv-surface));
+}
+.dv-person-name{
+  font-weight: var(--dv-fw-medium);
+  color: var(--dv-text);
+  font-size: 13.8px;
+}
+.dv-badge{
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  color: var(--dv-soft);
+  background: color-mix(in srgb, var(--dv-surface-3) 14%, transparent);
+}
+.dv-badge.me{
+  border-color: color-mix(in srgb, var(--dv-primary) 42%, var(--dv-line));
+  color: var(--dv-text);
+}
+
+/* Chat */
+.dv-chat{
+  border-radius: var(--dv-r-2);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 84%, transparent);
+  height: 220px;
+  overflow: auto;
+  padding: 12px;
+}
+.dv-chat-msg{
+  border-radius: 12px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 14%, transparent);
+  padding: 10px 12px;
+  margin-bottom: 8px;
+}
+.dv-chat-text{
+  color: var(--dv-text);
+  font-size: 14px;
+  line-height: 1.55;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.dv-chatbox{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  margin-top: 10px;
+}
+.dv-chatbox input{ flex: 1; min-width: 180px; }
+
+/* Help + footer */
+.dv-help{
+  color: var(--dv-soft);
+  font-size: 13.2px;
+  line-height: 1.55;
+  margin-top: 10px;
+}
+.dv-help-tight{ margin-top: 8px; }
+.dv-footer{
+  margin-top: var(--dv-s-4);
+  border-top: 1px solid var(--dv-line);
+  padding-top: var(--dv-s-3);
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  flex-wrap: wrap;
+  color: var(--dv-soft);
+  font-size: 13px;
+}
+.dv-sep{ color: var(--dv-soft); }
+.dv-link{ color: var(--dv-soft); }
+.dv-link:hover{ color: var(--dv-text); text-decoration: none; }
+
+/* File input */
+.dv-file{
+  padding: 8px 10px;
+  border-radius: var(--dv-r-1);
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 88%, transparent);
+  color: var(--dv-muted);
+}
