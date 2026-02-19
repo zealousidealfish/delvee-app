@@ -1,10 +1,325 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Delvee</title>
+  <meta name="description" content="Delvee — a surprise pulse lobby." />
+  <meta name="theme-color" content="#0F1114" id="meta-theme-color" />
+
+  <link rel="stylesheet" href="./styles.css" />
+
+  <!-- Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-auth-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-functions-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore-compat.js"></script>
+
+  <script>
+    const firebaseConfig = {
+      apiKey: "AIzaSyCECKG-00tijJrt5qvRy3L27ZzE7bocNrU",
+      authDomain: "setfeed-fcd7a.firebaseapp.com",
+      projectId: "setfeed-fcd7a",
+      storageBucket: "setfeed-fcd7a.firebasestorage.app",
+      messagingSenderId: "553573263069",
+      appId: "1:553573263069:web:e5c9884101ca38eaee1d34"
+    };
+
+    const SITE_ORIGIN = "https://delvee.app";
+
+    if (!firebase.apps || firebase.apps.length === 0) firebase.initializeApp(firebaseConfig);
+
+    const auth = firebase.auth();
+    const functions = firebase.app().functions("europe-west2");
+  </script>
+
+  <!-- Theme (deterministic, same key as Setfeed so your toggle carries over) -->
+  <script>
+    (function(){
+      const THEME_KEY = "sf_theme_mode";
+      const root = document.documentElement;
+
+      function applyTheme(){
+        let stored = "system";
+        try { stored = localStorage.getItem(THEME_KEY) || "system"; } catch (_) {}
+
+        if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
+        else root.removeAttribute("data-theme");
+
+        const effective =
+          root.getAttribute("data-theme") ||
+          (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+        const meta = document.getElementById("meta-theme-color");
+        if (meta) meta.content = (effective === "dark") ? "#0F1114" : "#FFFBFE";
+      }
+
+      applyTheme();
+      window.addEventListener("storage", (e) => { if (e && e.key === THEME_KEY) applyTheme(); });
+    })();
+  </script>
 </head>
-<body>
-  <h1>Delvee is live.</h1>
+
+<body class="dv-bg">
+  <header class="dv-top">
+    <div class="dv-top-inner">
+      <div class="dv-brand">
+        <div class="dv-mark" aria-hidden="true"></div>
+        <div class="dv-title">Delvee</div>
+      </div>
+      <div class="dv-top-actions">
+        <button class="dv-btn dv-btn-quiet" id="btn-signout" type="button" disabled>Sign out</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="dv-wrap">
+    <section class="dv-card">
+      <h1 class="dv-h1">A pulse lobby for surprise memory pages</h1>
+      <p class="dv-lead">Sign in, choose an alias, then create or join a lobby. Live preview is anonymous.</p>
+
+      <div class="dv-status" id="status">
+        <span class="dv-dot" id="statusDot"></span>
+        <div>
+          <div class="dv-status-title" id="statusTitle">Not signed in</div>
+          <div class="dv-status-line" id="statusLine">Sign in to begin.</div>
+        </div>
+      </div>
+
+      <div class="dv-grid">
+        <div class="dv-panel">
+          <h2 class="dv-h2">Sign in</h2>
+
+          <div class="dv-field">
+            <label for="email">Email</label>
+            <input id="email" type="email" placeholder="you@example.com" autocomplete="email" />
+          </div>
+
+          <div class="dv-actions">
+            <button class="dv-btn" id="btn-email" type="button">Send sign-in link</button>
+            <button class="dv-btn dv-btn-primary" id="btn-google" type="button">Google</button>
+          </div>
+
+          <p class="dv-help">Same Firebase project as Setfeed. Your Delvee domain must be authorized (you already did this).</p>
+        </div>
+
+        <div class="dv-panel">
+          <h2 class="dv-h2">Alias</h2>
+
+          <div class="dv-field">
+            <label for="alias">Your alias</label>
+            <input id="alias" type="text" maxlength="18" placeholder="e.g. Sky" />
+          </div>
+
+          <div class="dv-split">
+            <button class="dv-btn dv-btn-primary" id="btn-create" type="button" disabled>Create lobby</button>
+
+            <div class="dv-join">
+              <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" />
+              <button class="dv-btn" id="btn-join" type="button" disabled>Join</button>
+            </div>
+          </div>
+
+          <p class="dv-help">Session codes are shared out-of-band. Alias is locked per session.</p>
+        </div>
+      </div>
+
+      <footer class="dv-footer">
+        <a class="dv-link" href="https://setfeed.app" rel="noreferrer">Setfeed</a>
+        <span class="dv-sep">·</span>
+        <span class="dv-muted">Delvee runs as a separate site.</span>
+      </footer>
+    </section>
+  </main>
+
+  <script>
+    // -------------------------
+    // Status helper
+    // -------------------------
+    const statusDot = document.getElementById("statusDot");
+    const statusTitle = document.getElementById("statusTitle");
+    const statusLine = document.getElementById("statusLine");
+
+    function setStatus(kind, title, line) {
+      statusDot.className = "dv-dot";
+      if (kind === "good") statusDot.classList.add("good");
+      if (kind === "warn") statusDot.classList.add("warn");
+      statusTitle.textContent = title;
+      statusLine.textContent = line;
+    }
+
+    // -------------------------
+    // Elements
+    // -------------------------
+    const email = document.getElementById("email");
+    const alias = document.getElementById("alias");
+    const sessionId = document.getElementById("sessionId");
+
+    const btnEmail = document.getElementById("btn-email");
+    const btnGoogle = document.getElementById("btn-google");
+    const btnCreate = document.getElementById("btn-create");
+    const btnJoin = document.getElementById("btn-join");
+    const btnSignout = document.getElementById("btn-signout");
+
+    // -------------------------
+    // Local persistence
+    // -------------------------
+    const EMAIL_FOR_SIGNIN_KEY = "dv_email_for_signin";
+    const ALIAS_KEY = "dv_alias";
+
+    try {
+      const saved = localStorage.getItem(ALIAS_KEY);
+      if (saved) alias.value = saved;
+    } catch (_) {}
+
+    alias.addEventListener("input", () => {
+      try { localStorage.setItem(ALIAS_KEY, alias.value.trim()); } catch (_) {}
+      refreshEnabled();
+    });
+
+    function refreshEnabled() {
+      const authed = !!auth.currentUser;
+      const hasAlias = alias.value.trim().length > 0;
+      btnCreate.disabled = !(authed && hasAlias);
+      btnJoin.disabled = !(authed && hasAlias && sessionId.value.trim().length > 0);
+      btnSignout.disabled = !authed;
+    }
+
+    sessionId.addEventListener("input", refreshEnabled);
+    email.addEventListener("input", refreshEnabled);
+
+    // -------------------------
+    // Auth
+    // -------------------------
+    auth.onAuthStateChanged((user) => {
+      if (user) {
+        setStatus("good", "Signed in", user.email || "Ready");
+      } else {
+        setStatus("warn", "Not signed in", "Sign in to create or join a lobby.");
+      }
+      refreshEnabled();
+    });
+
+    btnGoogle.addEventListener("click", async () => {
+      try {
+        setStatus("good", "Signing in…", "Opening Google sign-in…");
+        const provider = new firebase.auth.GoogleAuthProvider();
+        provider.setCustomParameters({ prompt: "select_account" });
+        await auth.signInWithPopup(provider);
+        setStatus("good", "Signed in", "Choose an alias, then create or join.");
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t sign in", "Google sign-in failed. Check pop-up blocking and try again.");
+      }
+    });
+
+    btnEmail.addEventListener("click", async () => {
+      const em = email.value.trim();
+      if (!em) {
+        setStatus("warn", "Email needed", "Enter your email to request a sign-in link.");
+        return;
+      }
+
+      try {
+        setStatus("good", "Sending link…", "Check your inbox for the sign-in link.");
+        const actionCodeSettings = {
+          url: `${SITE_ORIGIN}/index.html#finishSignIn`,
+          handleCodeInApp: true
+        };
+
+        await auth.sendSignInLinkToEmail(em, actionCodeSettings);
+        try { localStorage.setItem(EMAIL_FOR_SIGNIN_KEY, em); } catch (_) {}
+        setStatus("good", "Link sent", "Open the link on this device to finish signing in.");
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t send link", "Email-link sign-in failed. Verify Auth is enabled.");
+      }
+    });
+
+    (async function finishEmailLinkIfPresent(){
+      try {
+        const href = window.location.href;
+        if (!auth.isSignInWithEmailLink(href)) return;
+
+        let em = "";
+        try { em = localStorage.getItem(EMAIL_FOR_SIGNIN_KEY) || ""; } catch (_) {}
+        if (!em) em = window.prompt("Confirm your email to finish sign-in:") || "";
+
+        if (!em) {
+          setStatus("warn", "Sign-in not finished", "Email is required to finish sign-in.");
+          return;
+        }
+
+        setStatus("good", "Signing in…", "Finishing email-link sign-in…");
+        await auth.signInWithEmailLink(em, href);
+
+        try { localStorage.removeItem(EMAIL_FOR_SIGNIN_KEY); } catch (_) {}
+        history.replaceState(null, "", "./index.html");
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Sign-in failed", "Couldn’t finish email-link sign-in. Try sending a new link.");
+      }
+    })();
+
+    btnSignout.addEventListener("click", async () => {
+      try {
+        await auth.signOut();
+        setStatus("warn", "Signed out", "Sign in again to create or join.");
+      } catch (e) {
+        console.error(e);
+      }
+    });
+
+    // -------------------------
+    // Create / Join
+    // -------------------------
+    function goLobby(sid) {
+      const s = String(sid || "").trim();
+      window.location.href = `./lobby.html?session=${encodeURIComponent(s)}`;
+    }
+
+    btnCreate.addEventListener("click", async () => {
+      const a = alias.value.trim();
+      if (!auth.currentUser) return;
+      if (!a) {
+        setStatus("warn", "Alias needed", "Choose an alias first.");
+        return;
+      }
+
+      try {
+        setStatus("good", "Creating…", "Opening a new lobby…");
+        const create = functions.httpsCallable("delveeCreateSession");
+        const res = await create({ alias: a });
+        const sid = res?.data?.sessionId;
+        if (!sid) throw new Error("Missing sessionId");
+        goLobby(sid);
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t create", (e && e.message) ? e.message : "Try again.");
+      }
+    });
+
+    btnJoin.addEventListener("click", async () => {
+      const sid = sessionId.value.trim();
+      const a = alias.value.trim();
+      if (!auth.currentUser) return;
+      if (!sid || !a) {
+        setStatus("warn", "Missing details", "Enter a session code and alias.");
+        return;
+      }
+
+      try {
+        setStatus("good", "Joining…", "Entering lobby…");
+        const join = functions.httpsCallable("delveeJoinSession");
+        await join({ sessionId: sid, alias: a });
+        goLobby(sid);
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
+      }
+    });
+
+    refreshEnabled();
+  </script>
 </body>
 </html>
