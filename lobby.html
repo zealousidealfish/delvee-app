@@ -1,3 +1,4 @@
+<!-- delvee/lobby.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -71,6 +72,7 @@
 
       <div class="dv-top-actions">
         <button class="dv-chip" id="btn-copy" type="button">Copy code</button>
+        <button class="dv-chip" id="btn-home" type="button">Home</button>
         <button class="dv-chip" id="btn-leave" type="button">Leave</button>
       </div>
     </div>
@@ -88,9 +90,9 @@
         <div class="dv-right" id="countdown"></div>
       </div>
 
-      <div class="dv-layout">
-        <!-- Left: participants -->
-        <aside class="dv-side">
+      <!-- Immersive layout: participants | feed | chat -->
+      <div class="dv-layout-immersive">
+        <aside class="dv-immersive-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Participants</h2>
@@ -98,9 +100,9 @@
             </div>
             <div class="dv-list" id="participants"></div>
 
-            <div class="dv-hr"></div>
+            <div style="height: 12px;"></div>
 
-            <div class="dv-actions dv-actions-compact">
+            <div class="dv-row">
               <button class="dv-btn" id="btn-ready" type="button">Ready</button>
 
               <div class="dv-host hidden" id="hostControls">
@@ -112,29 +114,33 @@
               </div>
             </div>
 
-            <p class="dv-help" id="hint">Anonymous live preview during RUNNING. Chat opens during cooldown.</p>
+            <div class="dv-help" id="hint">Anonymous live preview during RUNNING. Chat opens during cooldown.</div>
           </div>
         </aside>
 
-        <!-- Center: live feed + composer -->
-        <section class="dv-main">
+        <section class="dv-immersive-main">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Live preview</h2>
               <div class="dv-muted" id="feedMeta">—</div>
             </div>
 
-            <div class="dv-feed" id="feed"></div>
+            <div class="dv-feed dv-feed-immersive" id="feed"></div>
 
-            <div class="dv-composer" id="composer">
-              <div class="dv-compose-row">
+            <div class="dv-slab" id="composer" style="margin-top: 12px;">
+              <div class="dv-slab-head">
+                <div class="dv-slab-title">Pulse</div>
+                <div class="dv-soft" id="composerState">—</div>
+              </div>
+
+              <div class="dv-row" style="align-items: stretch;">
                 <textarea id="pulseText" maxlength="100" placeholder="Write a pulse (≤100 chars)"></textarea>
                 <button class="dv-btn dv-btn-primary" id="btn-pulse" type="button">Pulse</button>
               </div>
 
-              <div class="dv-compose-row dv-compose-row2">
+              <div class="dv-row">
                 <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
-                <button class="dv-btn" id="btn-image" type="button">Pulse image</button>
+                <button class="dv-btn dv-btn-primary" id="btn-image" type="button">Pulse image</button>
               </div>
 
               <div class="dv-help dv-help-tight" id="composerHelp">Pulses are throttled. Keep it flowing.</div>
@@ -142,8 +148,7 @@
           </div>
         </section>
 
-        <!-- Right: chat (cooldown/done only) -->
-        <aside class="dv-side">
+        <aside class="dv-immersive-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Chat</h2>
@@ -157,13 +162,41 @@
               <button class="dv-btn" id="btn-chat" type="button">Send</button>
             </div>
 
-            <div class="dv-help dv-help-tight">Chat is rate limited. Keep it calm.</div>
+            <div class="dv-help dv-help-tight" id="chatHint">Chat is rate limited. Keep it clean.</div>
           </div>
         </aside>
       </div>
 
     </section>
   </main>
+
+  <style>
+    /* Lobby-only layout helpers */
+    .dv-layout-immersive{
+      display:grid;
+      grid-template-columns: 320px 1fr 320px;
+      gap: var(--dv-s-4);
+      margin-top: var(--dv-s-4);
+      align-items: start;
+    }
+    .dv-feed-immersive{
+      min-height: 520px;
+      max-height: 62vh;
+    }
+    .dv-immersive-side{ min-width: 0; }
+    .dv-immersive-main{ min-width: 0; }
+    @media (max-width: 1100px){
+      .dv-layout-immersive{
+        grid-template-columns: 1fr;
+      }
+      .dv-feed-immersive{
+        max-height: 58vh;
+      }
+    }
+    @media (max-width: 720px){
+      #pulseText{ min-height: 88px; }
+    }
+  </style>
 
   <script>
     // -------------------------
@@ -223,6 +256,7 @@
     // -------------------------
     const btnCopy = document.getElementById("btn-copy");
     const btnLeave = document.getElementById("btn-leave");
+    const btnHome = document.getElementById("btn-home");
 
     const participantsEl = document.getElementById("participants");
     const statePill = document.getElementById("statePill");
@@ -239,6 +273,7 @@
     const feedMeta = document.getElementById("feedMeta");
 
     const composer = document.getElementById("composer");
+    const composerState = document.getElementById("composerState");
     const pulseText = document.getElementById("pulseText");
     const btnPulse = document.getElementById("btn-pulse");
     const pulseImage = document.getElementById("pulseImage");
@@ -267,12 +302,10 @@
     let isHost = false;
     let state = "—";
 
-    // Idempotency: keep the current pending pulse id if a retry happens
     let pendingTextPulse = null;
     let pendingImagePulse = null;
 
-    // Cache download URLs briefly to avoid refetching while scrolling
-    const downloadUrlCache = new Map(); // storagePath -> {url, exp}
+    const downloadUrlCache = new Map();
 
     // -------------------------
     // Actions
@@ -284,6 +317,10 @@
       } catch (_) {
         setStatus("warn", "Copy failed", "Copy manually from the header.");
       }
+    });
+
+    btnHome.addEventListener("click", () => {
+      window.location.href = `./index.html?session=${encodeURIComponent(sessionId)}`;
     });
 
     btnLeave.addEventListener("click", async () => {
@@ -328,7 +365,6 @@
       const text = pulseText.value.trim();
       if (!text) return;
 
-      // Only allow when RUNNING
       if (state !== "RUNNING") {
         setStatus("warn", "Not running", "Wait for the host to start.");
         return;
@@ -342,13 +378,11 @@
         const call = functions.httpsCallable("delveePulseText");
         await call({ sessionId, clientPulseId: pendingTextPulse, text });
 
-        // success resets pending and clears input
         pendingTextPulse = null;
         pulseText.value = "";
-        composerHelp.textContent = "Pulsed.";
+        composerHelp.textContent = "Sent.";
       } catch (e) {
         console.error(e);
-        // keep pendingTextPulse so retry is idempotent
         composerHelp.textContent = "Couldn’t pulse. Try again.";
         setStatus("warn", "Pulse failed", (e && e.message) ? e.message : "Try again.");
       } finally {
@@ -388,7 +422,6 @@
         const { uploadUrl, storagePath } = res.data || {};
         if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
 
-        // Upload bytes to signed URL (encrypted can be added later; MVP is plaintext)
         const bytes = await file.arrayBuffer();
         await fetch(uploadUrl, {
           method: "PUT",
@@ -396,22 +429,16 @@
           body: bytes
         });
 
-        // Commit pulse
         const commit = functions.httpsCallable("delveePulseImageCommit");
         await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: {
-            storagePath,
-            contentType: file.type,
-            sizeBytes: file.size
-            // ivB64/saltB64 optional in this MVP
-          }
+          attachment: { storagePath, contentType: file.type, sizeBytes: file.size }
         });
 
         pendingImagePulse = null;
         pulseImage.value = "";
-        composerHelp.textContent = "Image pulsed.";
+        composerHelp.textContent = "Image sent.";
       } catch (e) {
         console.error(e);
         composerHelp.textContent = "Couldn’t pulse image. Try again.";
@@ -450,264 +477,32 @@
       state = nextState || "—";
       statePill.textContent = state;
 
-      // Copy tone: calm + clear
       if (state === "LOBBY") {
-        hint.textContent = "Click ready. When everyone is ready, the host starts the pulse window.";
+        hint.textContent = "Ready up. Host starts when everyone is ready.";
+        composerState.textContent = "Locked";
       } else if (state === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+        hint.textContent = "Pulse window open. Feed is anonymous.";
+        composerState.textContent = "Open";
       } else if (state === "COOLDOWN") {
-        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+        hint.textContent = "Cooldown. Chat is open. No new pulses.";
+        composerState.textContent = "Closed";
       } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready (next: animated view).";
+        hint.textContent = "Done. Summary should be ready.";
+        composerState.textContent = "Closed";
       } else if (state === "CANCELLED") {
         hint.textContent = "This lobby expired before it started.";
+        composerState.textContent = "Closed";
       } else {
         hint.textContent = "—";
+        composerState.textContent = "—";
       }
 
-      // Composer only active during RUNNING
       setHidden(composer, state !== "RUNNING");
 
-      // Chat only during COOLDOWN/DONE
       const chatOpen = (state === "COOLDOWN" || state === "DONE");
       chatText.disabled = !chatOpen;
       btnChat.disabled = !chatOpen;
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
     }
 
-    function renderCountdown() {
-      if (!session) { countdownEl.textContent = ""; return; }
-
-      const now = Date.now();
-      if (state === "RUNNING" && session.endAtMillis) {
-        const left = session.endAtMillis - now;
-        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
-      } else if (state === "COOLDOWN" && session.cooldownEndsAtMillis) {
-        const left = session.cooldownEndsAtMillis - now;
-        countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
-      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
-        const left = session.reservationExpiresAtMillis - now;
-        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
-      } else {
-        countdownEl.textContent = state;
-      }
-    }
-
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url; // small safety buffer
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
-    function renderParticipants(list) {
-      // Sort by aliasLower for stable calm order
-      list.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
-
-      const meUid = auth.currentUser?.uid || "";
-      const frag = document.createDocumentFragment();
-
-      for (const p of list) {
-        const row = document.createElement("div");
-        row.className = "dv-person";
-
-        const left = document.createElement("div");
-        left.className = "dv-person-left";
-
-        const name = document.createElement("div");
-        name.className = "dv-person-name";
-        name.textContent = p.alias || "—";
-
-        const meta = document.createElement("div");
-        meta.className = "dv-person-meta";
-        const ready = p.ready ? "ready" : "not ready";
-        const pulses = typeof p.pulsesCount === "number" ? p.pulsesCount : 0;
-        meta.textContent = `${ready} · ${pulses} pulses`;
-
-        left.appendChild(name);
-        left.appendChild(meta);
-
-        const badge = document.createElement("div");
-        badge.className = "dv-badge";
-        badge.textContent = p.ready ? "✓" : "·";
-
-        if (p.uid === meUid) {
-          row.classList.add("me");
-          badge.classList.add("me");
-        }
-
-        row.appendChild(left);
-        row.appendChild(badge);
-        frag.appendChild(row);
-      }
-
-      participantsEl.innerHTML = "";
-      participantsEl.appendChild(frag);
-    }
-
-    async function renderFeed(items) {
-      feedMeta.textContent = `${items.length} pulses`;
-
-      // newest at bottom for “flow”
-      const frag = document.createDocumentFragment();
-
-      for (const it of items) {
-        const card = document.createElement("div");
-        card.className = "dv-pulse";
-
-        const kind = document.createElement("div");
-        kind.className = "dv-pulse-kind";
-        kind.textContent = it.kind === "image" ? "image" : "text";
-
-        card.appendChild(kind);
-
-        if (it.kind === "text") {
-          const body = document.createElement("div");
-          body.className = "dv-pulse-text";
-          body.textContent = it.text || "";
-          card.appendChild(body);
-        } else if (it.kind === "image" && it.attachment && it.attachment.storagePath) {
-          const imgWrap = document.createElement("div");
-          imgWrap.className = "dv-pulse-imgwrap";
-
-          const img = document.createElement("img");
-          img.className = "dv-pulse-img";
-          img.alt = "Pulse image";
-
-          imgWrap.appendChild(img);
-          card.appendChild(imgWrap);
-
-          // Lazy fetch a signed URL
-          getDownloadUrl(it.attachment.storagePath)
-            .then((url) => { if (url) img.src = url; })
-            .catch(() => {});
-        }
-
-        frag.appendChild(card);
-      }
-
-      feed.innerHTML = "";
-      feed.appendChild(frag);
-
-      // keep scrolled near bottom unless user scrolled up
-      feed.scrollTop = feed.scrollHeight;
-    }
-
-    function renderChat(items) {
-      const frag = document.createDocumentFragment();
-      for (const m of items) {
-        const row = document.createElement("div");
-        row.className = "dv-chat-msg";
-        row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
-        frag.appendChild(row);
-      }
-      chat.innerHTML = "";
-      chat.appendChild(frag);
-      chat.scrollTop = chat.scrollHeight;
-    }
-
-    // -------------------------
-    // Boot: ensure signed in + join
-    // -------------------------
-    async function boot() {
-      if (!sessionId) return;
-
-      setStatus("good", "Connecting…", "Signing in and joining the session.");
-
-      // Must be authed
-      const user = auth.currentUser;
-      if (!user) {
-        setStatus("warn", "Sign in required", "Return to home and sign in first.");
-        setTimeout(() => window.location.href = "./index.html", 900);
-        return;
-      }
-
-      if (!myAlias) {
-        setStatus("warn", "Alias missing", "Return to home and set an alias.");
-        setTimeout(() => window.location.href = "./index.html", 900);
-        return;
-      }
-
-      // Ensure participant doc exists (idempotent join)
-      try {
-        const join = functions.httpsCallable("delveeJoinSession");
-        await join({ sessionId, alias: myAlias });
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
-        return;
-      }
-
-      setStatus("good", "Connected", "Realtime lobby active.");
-
-      // Session doc listener
-      unsub.push(
-        sref.onSnapshot((snap) => {
-          const d = snap.data() || {};
-          session = d;
-
-          const st = d.state || "—";
-          renderState(st);
-
-          isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
-          setHidden(hostControls, !isHost);
-
-          renderCountdown();
-        }, (err) => {
-          console.error(err);
-          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
-        })
-      );
-
-      // My participant doc
-      unsub.push(
-        pref.doc(auth.currentUser.uid).onSnapshot((snap) => {
-          me = snap.data() || null;
-          const ready = !!(me && me.ready);
-          btnReady.textContent = ready ? "Unready" : "Ready";
-        })
-      );
-
-      // Participants list
-      unsub.push(
-        pref.onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderParticipants(list);
-        })
-      );
-
-      // Pulses feed (limit for performance)
-      unsub.push(
-        pulsesRef.orderBy("createdAtMillis", "asc").limit(250).onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderFeed(list);
-        })
-      );
-
-      // Chat feed
-      unsub.push(
-        chatRef.orderBy("createdAtMillis", "asc").limit(200).onSnapshot((snap) => {
-          const list = snap.docs.map(d => d.data());
-          renderChat(list);
-        })
-      );
-
-      // Countdown tick
-      setInterval(renderCountdown, 500);
-    }
-
-    auth.onAuthStateChanged(() => boot());
-
-    window.addEventListener("beforeunload", () => {
-      for (const u of unsub) try { u(); } catch (_) {}
-      unsub = [];
-    });
-  </script>
-</body>
-</html>
+   
