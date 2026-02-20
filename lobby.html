@@ -1,10 +1,11 @@
+<!-- delvee/lobby.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
   <title>Lobby — Delvee</title>
-  <meta name="theme-color" content="#0E1016" id="meta-theme-color" />
+  <meta name="theme-color" content="#0F1114" id="meta-theme-color" />
 
   <link rel="stylesheet" href="./styles.css" />
 
@@ -31,51 +32,97 @@
     const db = firebase.firestore();
   </script>
 
-  <!-- Delvee Theme (independent of Setfeed) -->
+  <!-- Theme (Lobby defaults to DARK if nothing set; does not overwrite storage) -->
   <script>
     (function(){
-      const THEME_KEY = "dv_theme_mode"; // "light" | "dark" | "system"(missing)
+      const THEME_KEY = "sf_theme_mode";
       const root = document.documentElement;
 
-      function systemPrefersDark(){
-        return !!(window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches);
+      function readStoredRaw(){
+        try { return localStorage.getItem(THEME_KEY); } catch (_) { return null; }
+      }
+      function readStored(){
+        return readStoredRaw() || "system";
       }
 
       function applyTheme(){
-        let stored = "system";
-        try { stored = localStorage.getItem(THEME_KEY) || "system"; } catch (_) {}
+        const storedRaw = readStoredRaw();
+        const stored = storedRaw || "system";
 
-        if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
-        else root.removeAttribute("data-theme");
+        // ✅ lobby default: dark when unset
+        if (!storedRaw) {
+          root.setAttribute("data-theme", "dark");
+        } else if (stored === "light" || stored === "dark") {
+          root.setAttribute("data-theme", stored);
+        } else {
+          root.removeAttribute("data-theme");
+        }
 
         const effective =
           root.getAttribute("data-theme") ||
-          (systemPrefersDark() ? "dark" : "light");
+          (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
 
         const meta = document.getElementById("meta-theme-color");
-        if (meta) meta.content = (effective === "dark") ? "#0E1016" : "#F6F7FB";
+        if (meta) meta.content = (effective === "dark") ? "#0F1114" : "#FFFBFE";
       }
 
-      function toggleTheme(){
-        let stored = "system";
-        try { stored = localStorage.getItem(THEME_KEY) || "system"; } catch (_) {}
+      function setToggleLabel(){
+        const btn = document.getElementById("themeToggle");
+        if (!btn) return;
 
-        const next = (stored === "dark") ? "light" : "dark";
-        try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
-        applyTheme();
+        const storedRaw = readStoredRaw();
+        const stored = storedRaw || "system";
+
+        const effective =
+          (!storedRaw) ? "dark" :
+          (stored === "light" || stored === "dark") ? stored :
+          (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+        btn.textContent = effective === "dark" ? "Light" : "Dark";
+        btn.setAttribute("aria-label", effective === "dark" ? "Switch to light theme" : "Switch to dark theme");
       }
 
-      window.__dvApplyTheme = applyTheme;
-      window.__dvToggleTheme = toggleTheme;
+      function wireToggle(){
+        const btn = document.getElementById("themeToggle");
+        if (!btn) return;
+
+        btn.addEventListener("click", () => {
+          const storedRaw = readStoredRaw();
+          const stored = storedRaw || "system";
+
+          const effective =
+            (!storedRaw) ? "dark" :
+            (stored === "light" || stored === "dark") ? stored :
+            (window.matchMedia && window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light");
+
+          const next = (effective === "dark") ? "light" : "dark";
+          try { localStorage.setItem(THEME_KEY, next); } catch (_) {}
+          applyTheme();
+          setToggleLabel();
+        });
+
+        if (window.matchMedia) {
+          const mq = window.matchMedia("(prefers-color-scheme: dark)");
+          try {
+            mq.addEventListener("change", () => { applyTheme(); setToggleLabel(); });
+          } catch (_) {}
+        }
+      }
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", applyTheme, { once: true });
+        document.addEventListener("DOMContentLoaded", () => {
+          applyTheme();
+          setToggleLabel();
+          wireToggle();
+        }, { once: true });
       } else {
         applyTheme();
+        setToggleLabel();
+        wireToggle();
       }
 
       window.addEventListener("storage", (e) => {
-        if (e && e.key === THEME_KEY) applyTheme();
+        if (e && e.key === THEME_KEY) { applyTheme(); setToggleLabel(); }
       });
     })();
   </script>
@@ -93,9 +140,7 @@
       </div>
 
       <div class="dv-top-actions">
-        <!-- Theme toggle -->
-        <button class="dv-theme-toggle" id="themeToggle" type="button" aria-label="Toggle theme">Theme</button>
-
+        <button class="dv-theme-toggle" id="themeToggle" type="button">Theme</button>
         <button class="dv-chip" id="btn-copy" type="button">Copy code</button>
         <button class="dv-chip" id="btn-home" type="button">Home</button>
         <button class="dv-chip" id="btn-leave" type="button">Leave</button>
@@ -200,15 +245,6 @@
   </main>
 
   <script>
-    // Theme toggle wire-up
-    (function(){
-      const btn = document.getElementById("themeToggle");
-      if (!btn) return;
-      btn.addEventListener("click", () => {
-        if (window.__dvToggleTheme) window.__dvToggleTheme();
-      });
-    })();
-
     // -------------------------
     // Utilities
     // -------------------------
