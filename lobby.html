@@ -133,14 +133,16 @@
       background: rgba(255,255,255,0.05);
       padding: 12px;
     }
+
     /* ✅ Make "Setfeed summary delivery" less harsh */
     .dv-summary h3{
       margin: 0 0 8px 0;
       font-size: 14px;
-      font-weight: 600;          /* less bold than default h3 */
-      letter-spacing: 0;
-      color: rgba(233,238,246,0.92);
+      font-weight: 500;        /* was default bold; soften */
+      opacity: 0.92;           /* slight soften */
+      letter-spacing: 0.1px;
     }
+
     .dv-summary pre{
       margin: 0;
       white-space: pre-wrap;
@@ -162,26 +164,51 @@
     }
     .dv-muted2 { font-size: 12px; color: rgba(233,238,246,0.70); line-height: 1.35; }
 
-    /* ✅ Prettier "Choose file" control */
-    .dv-file-hidden{
-      position:absolute !important;
-      width:1px !important;
-      height:1px !important;
-      padding:0 !important;
-      margin:-1px !important;
-      overflow:hidden !important;
-      clip: rect(0,0,0,0) !important;
-      white-space: nowrap !important;
-      border:0 !important;
-    }
-    .dv-filechip{
+    /* ✅ "Choose file" as a chip (hide native input; click chip triggers it) */
+    .dv-file{ display:none !important; }
+
+    .dv-file-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: rgba(233,238,246,0.92);
+      font: inherit;
+      line-height: 1;
       cursor: pointer;
       user-select: none;
       white-space: nowrap;
+    }
+    .dv-file-chip:active{
+      transform: translateY(1px);
+      opacity: 0.95;
+    }
+    .dv-file-dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(233,238,246,0.55);
+      flex: 0 0 auto;
+    }
+    .dv-file-name{
       max-width: 240px;
       overflow: hidden;
       text-overflow: ellipsis;
     }
+    .dv-file-clear{
+      border: 0;
+      background: transparent;
+      color: rgba(233,238,246,0.75);
+      padding: 0;
+      margin-left: 2px;
+      cursor: pointer;
+      font: inherit;
+      line-height: 1;
+    }
+    .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
   </style>
 </head>
 
@@ -276,9 +303,15 @@
               </div>
 
               <div class="dv-compose-row dv-compose-row2">
-                <!-- ✅ Hidden native input + chip-style trigger -->
-                <input class="dv-file-hidden" id="pulseImage" type="file" accept="image/*" />
-                <label class="dv-chip dv-filechip" id="pulseImageChip" for="pulseImage" role="button" tabindex="0">Choose image</label>
+                <!-- native file input kept for functionality but hidden -->
+                <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
+
+                <!-- ✅ chip trigger -->
+                <button class="dv-file-chip" id="btn-choose-image" type="button" aria-label="Choose image">
+                  <span class="dv-file-dot" aria-hidden="true"></span>
+                  <span id="dv-file-chip-label">Choose image</span>
+                </button>
+
                 <button class="dv-btn" id="btn-image" type="button">Pulse image</button>
               </div>
 
@@ -416,9 +449,12 @@
     const pulseText = document.getElementById("pulseText");
     const btnPulse = document.getElementById("btn-pulse");
     const pulseImage = document.getElementById("pulseImage");
-    const pulseImageChip = document.getElementById("pulseImageChip");
     const btnImage = document.getElementById("btn-image");
     const composerHelp = document.getElementById("composerHelp");
+
+    // ✅ chip choose-image UI
+    const btnChooseImage = document.getElementById("btn-choose-image");
+    const chipLabel = document.getElementById("dv-file-chip-label");
 
     const chat = document.getElementById("chat");
     const chatText = document.getElementById("chatText");
@@ -460,34 +496,44 @@
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
     // -------------------------
-    // File chip UX
+    // Chip file picker wiring
     // -------------------------
-    function truncateName(name, max = 26) {
-      const s = String(name || "");
-      if (s.length <= max) return s;
-      const dot = s.lastIndexOf(".");
-      if (dot > 0 && dot < s.length - 1) {
-        const ext = s.slice(dot);
-        const base = s.slice(0, dot);
-        const keep = Math.max(10, max - ext.length - 1);
-        return `${base.slice(0, keep)}…${ext}`;
+    function renderChosenFileName() {
+      const f = (pulseImage && pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
+      if (!chipLabel) return;
+
+      if (!f) {
+        chipLabel.textContent = "Choose image";
+        return;
       }
-      return `${s.slice(0, max - 1)}…`;
-    }
-    function refreshFileChip() {
-      const f = pulseImage.files && pulseImage.files[0] ? pulseImage.files[0] : null;
-      pulseImageChip.textContent = f ? truncateName(f.name) : "Choose image";
-      pulseImageChip.setAttribute("aria-label", f ? `Selected: ${f.name}. Choose a different image` : "Choose an image file");
-    }
-    pulseImage.addEventListener("change", refreshFileChip);
-    // keyboard activation for label "button"
-    pulseImageChip.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" || e.key === " ") {
+
+      // show filename + small clear button inline
+      chipLabel.innerHTML = "";
+      const name = document.createElement("span");
+      name.className = "dv-file-name";
+      name.textContent = f.name;
+
+      const clear = document.createElement("button");
+      clear.className = "dv-file-clear";
+      clear.type = "button";
+      clear.textContent = "×";
+      clear.setAttribute("aria-label", "Clear selected image");
+      clear.addEventListener("click", (e) => {
         e.preventDefault();
-        pulseImage.click();
-      }
-    });
-    refreshFileChip();
+        e.stopPropagation();
+        pulseImage.value = "";
+        renderChosenFileName();
+      });
+
+      chipLabel.appendChild(name);
+      chipLabel.appendChild(clear);
+    }
+
+    if (btnChooseImage && pulseImage) {
+      btnChooseImage.addEventListener("click", () => pulseImage.click());
+      pulseImage.addEventListener("change", renderChosenFileName);
+      renderChosenFileName();
+    }
 
     // -------------------------
     // Setfeed crypto helpers (client-side encrypt)
@@ -778,7 +824,7 @@
 
         pendingImagePulse = null;
         pulseImage.value = "";
-        refreshFileChip();
+        renderChosenFileName();
         composerHelp.textContent = "Image pulsed.";
       } catch (e) {
         console.error(e);
