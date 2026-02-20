@@ -1,6 +1,14 @@
 /* delvee/styles.css (FULL FILE REPLACEMENT)
    Delvee = attentive, timed, deterministic.
    Separate visual identity from Setfeed.
+
+   Update in this replacement:
+   - Add missing layout classes used by HTML: dv-hero, dv-hero-left, dv-panel-strong, dv-panel-soft
+   - Move index/lobby inline polish into stylesheet:
+     * authed two-card centering + hide sign-in panel
+     * join-code header row helpers (dv-inline-row, dv-mini, dv-chiplike)
+     * Setfeed summary styling + softer title
+     * chip-style file picker (Choose image + filename + clear)
 */
 
 :root{
@@ -186,7 +194,9 @@ a:hover{ text-decoration: underline; }
   box-shadow:
     0 1px 0 rgba(255,255,255,0.22) inset,
     0 16px 30px rgba(0,0,0,0.12);
+  display: inline-block;
 }
+a.dv-mark{ text-decoration: none; }
 .dv-title{
   font-weight: var(--dv-fw-bold);
   letter-spacing: -0.18px;
@@ -227,6 +237,10 @@ a:hover{ text-decoration: underline; }
   padding: var(--dv-s-6) var(--dv-s-4) var(--dv-s-8);
 }
 .dv-wrap-wide{ max-width: var(--dv-max-wide); }
+
+/* Hero helpers (used on index) */
+.dv-hero{ }
+.dv-hero-left{ max-width: 980px; margin: 0 auto; }
 
 /* Card */
 .dv-card{
@@ -285,6 +299,19 @@ a:hover{ text-decoration: underline; }
   .dv-grid, .dv-grid-3{ grid-template-columns: 1fr; }
 }
 
+/* ✅ Authed layout: hide sign-in panel and center the remaining two cards */
+.dv-grid.dv-grid-3{
+  gap: 16px;
+  align-items: stretch;
+}
+body.dv-authed .dv-grid.dv-grid-3{
+  grid-template-columns: repeat(2, minmax(0, 420px));
+  justify-content: center;
+}
+body.dv-authed #signInPanel{
+  display: none !important;
+}
+
 /* Status */
 .dv-status{
   margin-top: var(--dv-s-4);
@@ -297,6 +324,11 @@ a:hover{ text-decoration: underline; }
   align-items: center;
 }
 .dv-status-tight{ margin-top: 0; }
+.dv-status-center{
+  max-width: 880px;
+  margin-left: auto;
+  margin-right: auto;
+}
 .dv-status-title{
   color: var(--dv-text);
   font-weight: var(--dv-fw-bold);
@@ -332,6 +364,13 @@ a:hover{ text-decoration: underline; }
   background: color-mix(in srgb, var(--dv-surface-2) 84%, transparent);
   padding: var(--dv-s-5);
 }
+.dv-panel-strong{
+  background: color-mix(in srgb, var(--dv-surface-2) 88%, transparent);
+  border-color: color-mix(in srgb, var(--dv-primary) 14%, var(--dv-line));
+}
+.dv-panel-soft{
+  background: color-mix(in srgb, var(--dv-surface-2) 78%, transparent);
+}
 .dv-panel-head{
   display:flex;
   align-items: baseline;
@@ -358,8 +397,36 @@ a:hover{ text-decoration: underline; }
   font-weight: var(--dv-fw-medium);
 }
 
+/* Join-code header row helpers (index) */
+.dv-inline-row{
+  display:flex;
+  gap: 10px;
+  align-items:center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+}
+.dv-label-block{ display:block; }
+.dv-mini{
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dv-soft) 88%, transparent);
+  line-height: 1.35;
+}
+.dv-chiplike{
+  display:inline-flex;
+  align-items:center;
+  gap:8px;
+  padding: 8px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 14%, transparent);
+  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+  font-size: 12.5px;
+  white-space: nowrap;
+}
+
 /* Forms */
 .dv-field{ display:flex; flex-direction: column; gap: 6px; margin-top: 10px; }
+.dv-field-tight{ margin-top: 10px; }
 .dv-field label{ color: var(--dv-soft); font-size: 13px; }
 input, textarea, select{
   width: 100%;
@@ -614,7 +681,102 @@ input:focus, textarea:focus, select:focus{
 .dv-link{ color: var(--dv-soft); }
 .dv-link:hover{ color: var(--dv-text); text-decoration: none; }
 
-/* File input */
+/* --- Lobby: summary + inputs (Setfeed delivery) --- */
+.dv-summary{
+  margin-top: 12px;
+  border-radius: 14px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 12%, transparent);
+  padding: 12px;
+}
+.dv-summary-title{
+  margin: 0 0 8px 0;
+  font-size: 13.8px;
+  font-weight: var(--dv-fw-medium);
+  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+  opacity: 0.92;
+  letter-spacing: -0.02px;
+}
+.dv-summary pre{
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  font-size: 12.5px;
+  line-height: 1.35;
+  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+}
+.dv-minirow{
+  display:flex;
+  gap:10px;
+  flex-wrap:wrap;
+  align-items:center;
+  margin-top: 10px;
+}
+.dv-input{
+  width: 100%;
+  border-radius: 12px;
+  padding: 10px 12px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface) 70%, transparent);
+  color: var(--dv-text);
+  outline: none;
+}
+.dv-muted2{
+  font-size: 12px;
+  color: color-mix(in srgb, var(--dv-soft) 92%, transparent);
+  line-height: 1.35;
+}
+
+/* --- File input as a chip (lobby) --- */
+.dv-file-input{ display:none !important; }
+
+.dv-file-chip{
+  display:inline-flex;
+  align-items:center;
+  gap:10px;
+  padding: 10px 12px;
+  border-radius: 999px;
+  border: 1px solid var(--dv-line);
+  background: color-mix(in srgb, var(--dv-surface-3) 16%, transparent);
+  color: color-mix(in srgb, var(--dv-text) 94%, transparent);
+  font: inherit;
+  line-height: 1;
+  cursor: pointer;
+  user-select: none;
+  white-space: nowrap;
+}
+.dv-file-chip:active{
+  transform: translateY(1px);
+  opacity: 0.95;
+}
+.dv-file-dot{
+  width: 8px;
+  height: 8px;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--dv-text) 55%, transparent);
+  flex: 0 0 auto;
+}
+.dv-file-name{
+  max-width: 240px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.dv-file-clear{
+  border: 0;
+  background: transparent;
+  color: color-mix(in srgb, var(--dv-text) 72%, transparent);
+  padding: 0;
+  margin-left: 2px;
+  cursor: pointer;
+  font: inherit;
+  line-height: 1;
+}
+.dv-file-clear:hover{
+  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+}
+
+/* Legacy (kept): visible file input style if ever used elsewhere */
 .dv-file{
   padding: 8px 10px;
   border-radius: var(--dv-r-1);
