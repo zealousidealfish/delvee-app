@@ -110,57 +110,6 @@
       });
     })();
   </script>
-
-  <style>
-    .hidden{ display:none !important; }
-
-    /* ✅ Better spacing + centered two-card layout when authed */
-    .dv-grid.dv-grid-3{
-      gap: 16px !important;
-      align-items: stretch;
-    }
-    body.dv-authed .dv-grid.dv-grid-3{
-      grid-template-columns: repeat(2, minmax(0, 420px)) !important;
-      justify-content: center !important;
-    }
-    body.dv-authed #signInPanel{
-      display: none !important;
-    }
-
-    /* Small polish */
-    .dv-panel{ min-height: 100%; }
-    .dv-actions{ gap: 10px; }
-    .dv-field input[readonly]{
-      cursor: default;
-      opacity: 0.98;
-    }
-
-    /* Join-code header row */
-    .dv-inline-row{
-      display:flex;
-      gap: 10px;
-      align-items:center;
-      justify-content: space-between;
-      flex-wrap: wrap;
-    }
-    .dv-mini{
-      font-size: 12px;
-      color: rgba(233,238,246,0.70);
-      line-height: 1.35;
-    }
-    .dv-chiplike{
-      display:inline-flex;
-      align-items:center;
-      gap:8px;
-      padding: 8px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(255,255,255,0.05);
-      color: rgba(233,238,246,0.88);
-      font-size: 12.5px;
-      white-space: nowrap;
-    }
-  </style>
 </head>
 
 <body class="dv-bg">
@@ -176,7 +125,6 @@
       <div class="dv-top-actions">
         <button class="dv-theme-toggle" id="themeToggle" type="button">Theme</button>
         <button class="dv-chip" id="btn-resume" type="button" disabled>Resume lobby</button>
-        <!-- Hide when not signed in -->
         <button class="dv-btn dv-btn-quiet hidden" id="btn-signout" type="button">Sign out</button>
       </div>
     </div>
@@ -190,7 +138,7 @@
           Anonymous live preview. Throttled submissions. A short window, then reveal.
         </p>
 
-        <div class="dv-status" id="status">
+        <div class="dv-status dv-status-center" id="status">
           <span class="dv-dot" id="statusDot"></span>
           <div>
             <div class="dv-status-title" id="statusTitle">Not signed in</div>
@@ -216,13 +164,13 @@
 
             <div class="dv-inline-row">
               <div>
-                <label for="sessionId" style="display:block;">Join code</label>
+                <label for="sessionId" class="dv-label-block">Join code</label>
                 <div class="dv-mini" id="codeHint">Sign in, then enter an alias to generate a code.</div>
               </div>
               <span class="dv-chiplike hidden" id="codePill">Code ready</span>
             </div>
 
-            <div class="dv-field" style="margin-top:10px;">
+            <div class="dv-field dv-field-tight">
               <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" readonly />
               <div class="dv-help" id="sessionHelp">This is your lobby code to share.</div>
             </div>
@@ -334,8 +282,6 @@
     const EMAIL_FOR_SIGNIN_KEY = "dv_email_for_signin";
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
-
-    // ✅ remember the generated join code for this browser (so we don't create a new one on refresh)
     const GENERATED_SESSION_KEY = "dv_generated_session_id";
 
     try {
@@ -403,6 +349,7 @@
       btnOpen.disabled = !ready;
       btnCopy.disabled = !ready;
       sessionId.readOnly = true;
+
       if (ready) {
         codeHint.textContent = "Share this code to invite others.";
         identityMeta.textContent = "locked for this session";
@@ -416,19 +363,13 @@
       const authed = !!auth.currentUser;
       setAuthedLayout(authed);
 
-      const hasAlias = alias.value.trim().length > 0;
-
       const last = getLastSession();
       btnResume.disabled = !(authed && last);
 
-      // code readiness
       const sid = (sessionId.value || "").trim().toUpperCase();
       setCodeReadyUI(authed && !!sid);
 
-      // status copy
-      if (!authed) {
-        setStatus("warn", "Not signed in", "Sign in to generate a join code.");
-      }
+      if (!authed) setStatus("warn", "Not signed in", "Sign in to generate a join code.");
     }
 
     // -------------------------
@@ -438,8 +379,8 @@
       const authed = !!auth.currentUser;
       const a = alias.value.trim();
       if (!authed) return;
+
       if (!a) {
-        // no alias yet: clear generated UI (but keep stored id if it exists)
         const existing = getGeneratedSession();
         if (existing) {
           sessionId.value = existing;
@@ -451,7 +392,6 @@
         return;
       }
 
-      // if we already have one stored, use it
       const existing = getGeneratedSession();
       if (existing) {
         sessionId.value = existing;
@@ -489,10 +429,8 @@
       }
     }
 
-    // Persist alias
     alias.addEventListener("input", () => {
       try { localStorage.setItem(ALIAS_KEY, alias.value.trim()); } catch (_) {}
-      // if user changes alias before code exists, we’ll generate once alias is present
       maybeCreateJoinCode().catch(() => {});
       refreshEnabled();
     });
@@ -505,8 +443,6 @@
 
       if (user) {
         setStatus("good", "Signed in", user.email || "Ready");
-        // ✅ hide the whole sign-in section automatically via CSS (dv-authed)
-        // ✅ create join code once alias is entered (or restore stored code)
         const existing = getGeneratedSession();
         if (existing) {
           sessionId.value = existing;
@@ -517,7 +453,6 @@
         }
         maybeCreateJoinCode().catch(() => {});
       } else {
-        // On sign-out: reset code UI (but keep stored alias)
         sessionId.value = "";
         try { localStorage.removeItem(GENERATED_SESSION_KEY); } catch (_) {}
         setCodeReadyUI(false);
@@ -600,10 +535,8 @@
     // -------------------------
     // Init
     // -------------------------
-    // On load, if there’s a stored generated code, show it (authed will enable)
     const existing = getGeneratedSession();
     if (existing) sessionId.value = existing;
-
     refreshEnabled();
   </script>
 </body>
