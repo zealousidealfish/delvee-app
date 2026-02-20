@@ -1,3 +1,4 @@
+<!-- delvee/lobby.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -45,6 +46,7 @@
         const storedRaw = readStoredRaw();
         const stored = storedRaw || "system";
 
+        // ✅ lobby default: dark when unset
         if (!storedRaw) {
           root.setAttribute("data-theme", "dark");
         } else if (stored === "light" || stored === "dark") {
@@ -98,14 +100,22 @@
 
         if (window.matchMedia) {
           const mq = window.matchMedia("(prefers-color-scheme: dark)");
-          try { mq.addEventListener("change", () => { applyTheme(); setToggleLabel(); }); } catch (_) {}
+          try {
+            mq.addEventListener("change", () => { applyTheme(); setToggleLabel(); });
+          } catch (_) {}
         }
       }
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => { applyTheme(); setToggleLabel(); wireToggle(); }, { once: true });
+        document.addEventListener("DOMContentLoaded", () => {
+          applyTheme();
+          setToggleLabel();
+          wireToggle();
+        }, { once: true });
       } else {
-        applyTheme(); setToggleLabel(); wireToggle();
+        applyTheme();
+        setToggleLabel();
+        wireToggle();
       }
 
       window.addEventListener("storage", (e) => {
@@ -113,6 +123,38 @@
       });
     })();
   </script>
+
+  <style>
+    /* Small local additions (kept minimal) */
+    .dv-summary {
+      margin-top: 12px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      padding: 12px;
+    }
+    .dv-summary h3{ margin: 0 0 8px 0; font-size: 14px; }
+    .dv-summary pre{
+      margin: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+      font-size: 12.5px;
+      line-height: 1.35;
+      color: rgba(233,238,246,0.92);
+    }
+    .dv-minirow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 10px; }
+    .dv-input {
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(15,17,20,0.55);
+      color: rgba(233,238,246,0.92);
+      outline: none;
+    }
+    .dv-muted2 { font-size: 12px; color: rgba(233,238,246,0.70); line-height: 1.35; }
+  </style>
 </head>
 
 <body class="dv-bg">
@@ -175,6 +217,17 @@
             <p class="dv-help" id="hint">
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
+
+            <!-- Setfeed summary delivery -->
+            <div class="dv-summary" id="setfeedPanel">
+              <h3>Setfeed summary delivery</h3>
+              <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
+              <div class="dv-minirow">
+                <button class="dv-btn" id="btn-toggle-autosend" type="button">Auto-send: Off</button>
+                <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
+              </div>
+              <div class="dv-muted2" id="setfeedStatus">Tip: each participant uses their own receive code (summary encrypts locally).</div>
+            </div>
           </div>
         </aside>
 
@@ -203,6 +256,17 @@
                 Fast, short, deliberate. Throttling is enforced.
               </div>
             </div>
+
+            <!-- Summary view (DONE) -->
+            <div class="dv-summary hidden" id="summaryPanel">
+              <h3>Session summary</h3>
+              <pre id="summaryText">—</pre>
+              <div class="dv-minirow">
+                <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
+              </div>
+              <div class="dv-muted2" id="summaryMeta">Generated on DONE.</div>
+            </div>
+
           </div>
         </section>
 
@@ -240,6 +304,11 @@
 
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
+
+    const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
+    const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
+
+    const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
 
     const myAlias = (() => {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
@@ -325,6 +394,18 @@
     const btnChat = document.getElementById("btn-chat");
     const chatMeta = document.getElementById("chatMeta");
 
+    // Summary UI
+    const summaryPanel = document.getElementById("summaryPanel");
+    const summaryTextEl = document.getElementById("summaryText");
+    const summaryMeta = document.getElementById("summaryMeta");
+    const btnSendSummary = document.getElementById("btn-send-summary");
+    const btnSendSummary2 = document.getElementById("btn-send-summary-2");
+
+    // Setfeed delivery UI
+    const setfeedCodeInput = document.getElementById("setfeedCode");
+    const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
+    const setfeedStatus = document.getElementById("setfeedStatus");
+
     // -------------------------
     // Firestore refs
     // -------------------------
@@ -347,25 +428,23 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
-    // Track last rendered pulses (for summary)
-    let latestPulses = [];
-
-    // Delvee -> Setfeed delivery
-    let deliveryAttempted = false; // session-local memory
-    const DELIVERY_FLAG_KEY = `dv_delivered_summary_${sessionId}`; // localStorage idempotency fallback
-
     // -------------------------
-    // Setfeed crypto helpers (client-side encryption)
+    // Setfeed crypto helpers (client-side encrypt)
     // -------------------------
-    function normalizeReceiveCode(raw) {
-      return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, "");
-    }
+    function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
     function bytesToB64(bytes) {
       let bin = "";
-      const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      const arr = (bytes instanceof Uint8Array) ? bytes : new Uint8Array(bytes);
       for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
       return btoa(bin);
+    }
+
+    function b64ToBytes(b64) {
+      const bin = atob(b64);
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
     }
 
     async function sha256Hex(str) {
@@ -387,148 +466,119 @@
     }
 
     async function encryptForCode(rawCode, plaintext) {
-      const passphrase = normalizeReceiveCode(rawCode);
+      const passphrase = normalizeCodeAndroid(rawCode);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveAesKeyFromPassphrase(passphrase, salt);
 
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
-      const ctBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
 
       return {
-        ciphertextB64: bytesToB64(new Uint8Array(ctBuf)),
+        ciphertextB64: bytesToB64(new Uint8Array(ct)),
         ivB64: bytesToB64(iv),
-        saltB64: bytesToB64(salt)
+        saltB64: bytesToB64(salt),
       };
     }
 
-    // -------------------------
-    // Delvee summary build
-    // -------------------------
-    function buildSummaryText() {
-      const started = session && session.startsAtUtc ? session.startsAtUtc : null;
-      const ended = session && session.endAtUtc ? session.endAtUtc : null;
+    function tzName() {
+      try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) { return "UTC"; }
+    }
 
-      const total = Array.isArray(latestPulses) ? latestPulses.length : 0;
+    function getAutosend() {
+      try { return localStorage.getItem(SETFEED_AUTOSEND_KEY) === "true"; } catch (_) { return false; }
+    }
+    function setAutosend(v) {
+      try { localStorage.setItem(SETFEED_AUTOSEND_KEY, v ? "true" : "false"); } catch (_) {}
+    }
 
-      // keep summary compact: last 40 pulses
-      const tail = (latestPulses || []).slice(-40);
+    function getStoredSetfeedCode() {
+      try { return (localStorage.getItem(SETFEED_CODE_KEY) || "").trim(); } catch (_) { return ""; }
+    }
+    function setStoredSetfeedCode(v) {
+      try { localStorage.setItem(SETFEED_CODE_KEY, String(v || "").trim()); } catch (_) {}
+    }
 
-      const lines = [];
-      lines.push("Delvee — pulse summary");
-      lines.push(`Session: ${sessionId}`);
-      if (started) lines.push(`Started: ${started}`);
-      if (ended) lines.push(`Ended: ${ended}`);
-      lines.push(`Pulses: ${total}`);
-      lines.push("");
-      lines.push("Recent pulses:");
-      for (const p of tail) {
-        if (p.kind === "text") {
-          const t = String(p.text || "").replace(/\s+/g, " ").trim();
-          lines.push(`• text: ${t}`);
-        } else if (p.kind === "image") {
-          lines.push("• image");
-        } else {
-          lines.push("• pulse");
-        }
+    function hasSentForThisSession() {
+      try { return localStorage.getItem(SENT_FLAG_KEY) === "true"; } catch (_) { return false; }
+    }
+    function markSentForThisSession() {
+      try { localStorage.setItem(SENT_FLAG_KEY, "true"); } catch (_) {}
+    }
+
+    function refreshSetfeedUI() {
+      const auto = getAutosend();
+      btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
+
+      const code = (setfeedCodeInput.value || "").trim();
+      const canSend = !!code && !!session && state === "DONE" && !!(session.summaryText);
+      btnSendSummary.disabled = !canSend;
+      btnSendSummary2.disabled = !canSend;
+
+      if (hasSentForThisSession()) {
+        setfeedStatus.textContent = "Summary sent to your Setfeed inbox for this session.";
+      } else if (!code) {
+        setfeedStatus.textContent = "Paste your Setfeed receive code. Summary encrypts locally and sends to your inbox.";
+      } else if (state !== "DONE") {
+        setfeedStatus.textContent = "Summary sends when the session is DONE (or you can send once it appears).";
+      } else if (session && session.summaryText) {
+        setfeedStatus.textContent = auto ? "Auto-send is ON: will send once per session." : "Ready to send.";
+      } else {
+        setfeedStatus.textContent = "Waiting for summary generation…";
       }
-      lines.push("");
-      lines.push("Delivered by Delvee into Setfeed (encrypted).");
-
-      // Hard cap to avoid huge envelopes
-      const out = lines.join("\n");
-      return out.length > 4500 ? out.slice(0, 4500) + "\n…(truncated)" : out;
     }
 
-    async function readDelveeSummaryPrefs() {
-      const call = functions.httpsCallable("getDelveeSummaryPrefs");
-      const res = await call({});
-      return (res && res.data && res.data.prefs) ? res.data.prefs : null;
-    }
-
-    async function getSetfeedReceiveCodeFromPrefs(prefs) {
-      if (!prefs || !prefs.enabled) return null;
-
-      if (prefs.destination === "setfeed_app_code") {
-        const code = prefs.setfeedAppReceiveCode || "";
-        const norm = normalizeReceiveCode(code);
-        return norm ? norm : null;
-      }
-
-      // destination: web inbox
-      const which = (prefs.setfeedWebCodeType === "personal") ? "personal" : "secure";
-      const call = functions.httpsCallable("getReceiveCodes");
-      const res = await call({});
-      const codes = (res && res.data) ? res.data : null;
-
-      const code =
-        which === "personal"
-          ? (codes && codes.personal && codes.personal.code ? codes.personal.code : null)
-          : (codes && codes.secure && codes.secure.code ? codes.secure.code : null);
-
-      return code ? normalizeReceiveCode(code) : null;
-    }
-
-    function markDeliveredFlag() {
-      try { localStorage.setItem(DELIVERY_FLAG_KEY, "true"); } catch (_) {}
-      deliveryAttempted = true;
-    }
-
-    function hasDeliveredFlag() {
-      if (deliveryAttempted) return true;
-      try { return localStorage.getItem(DELIVERY_FLAG_KEY) === "true"; } catch (_) { return false; }
-    }
-
-    async function maybeDeliverSummaryToSetfeed() {
-      // Only once, only in DONE
+    async function sendSummaryToSetfeed() {
       if (!auth.currentUser) return;
-      if (state !== "DONE") return;
-      if (hasDeliveredFlag()) return;
 
-      // guard against firing while pulses stream is still syncing
-      // (still okay if it’s slightly early — summary will be “recent pulses”)
-      markDeliveredFlag(); // optimistic: prevents spam loops
+      const codeRaw = (setfeedCodeInput.value || "").trim();
+      if (!codeRaw) {
+        setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
+        return;
+      }
+      if (!session || !session.summaryText) {
+        setStatus("warn", "No summary", "Summary not ready yet.");
+        return;
+      }
+      if (hasSentForThisSession()) {
+        setStatus("good", "Already sent", "This session’s summary has already been sent from this device.");
+        refreshSetfeedUI();
+        return;
+      }
 
       try {
-        setStatus("good", "Delivering summary…", "Sending Delvee summary into Setfeed.");
-        const prefs = await readDelveeSummaryPrefs();
-        if (!prefs || !prefs.enabled) {
-          setStatus("good", "Done", "Summary delivery is off (prefs disabled).");
-          return;
-        }
+        btnSendSummary.disabled = true;
+        btnSendSummary2.disabled = true;
+        setfeedStatus.textContent = "Encrypting + sending…";
 
-        const receiveCode = await getSetfeedReceiveCodeFromPrefs(prefs);
-        if (!receiveCode) {
-          setStatus("warn", "No destination code", "Set a Delvee summary destination in Setfeed → Receive.");
-          return;
-        }
-
-        const normalized = normalizeReceiveCode(receiveCode);
+        const normalized = normalizeCodeAndroid(codeRaw);
         const codeHash = await sha256Hex(normalized);
 
-        const summary = buildSummaryText();
-        const enc = await encryptForCode(normalized, summary);
+        const enc = await encryptForCode(codeRaw, session.summaryText);
 
-        const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
-        const deliverAtLocalIso = new Date().toISOString(); // includes Z offset
-        const clientRequestId = `delvee_summary_${sessionId}`; // ✅ idempotent doc id
+        const deliverAtLocalIso = new Date().toISOString(); // has Z offset
+        const call = functions.httpsCallable("sendSignedCiphertext");
 
-        const send = functions.httpsCallable("sendSignedCiphertext");
-        await send({
+        await call({
           codeHash,
           ciphertext: enc.ciphertextB64,
           iv: enc.ivB64,
           salt: enc.saltB64,
           deliverAtLocalIso,
-          userTimezone: tz,
-          clientRequestId,
-          attachments: []
+          userTimezone: tzName(),
+          clientRequestId: randomId("sum"),
+          attachments: [],
         });
 
-        setStatus("good", "Summary delivered", "Delivered into Setfeed (signed inbox).");
+        markSentForThisSession();
+        setfeedStatus.textContent = "Sent — check your Setfeed Inbox.";
+        setStatus("good", "Sent", "Summary delivered to your Setfeed Inbox.");
       } catch (e) {
-        console.error("[deliver summary] failed:", e);
-        setStatus("warn", "Summary failed", (e && e.message) ? e.message : "Couldn’t deliver summary.");
+        console.error(e);
+        setfeedStatus.textContent = "Couldn’t send. Check you’re signed in and the code is valid.";
+        setStatus("warn", "Send failed", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        refreshSetfeedUI();
       }
     }
 
@@ -699,6 +749,21 @@
       }
     });
 
+    // Setfeed controls
+    setfeedCodeInput.value = getStoredSetfeedCode();
+    setfeedCodeInput.addEventListener("input", () => {
+      setStoredSetfeedCode(setfeedCodeInput.value);
+      refreshSetfeedUI();
+    });
+
+    btnToggleAutosend.addEventListener("click", () => {
+      setAutosend(!getAutosend());
+      refreshSetfeedUI();
+    });
+
+    btnSendSummary.addEventListener("click", sendSummaryToSetfeed);
+    btnSendSummary2.addEventListener("click", sendSummaryToSetfeed);
+
     // -------------------------
     // Realtime rendering
     // -------------------------
@@ -713,7 +778,7 @@
       } else if (state === "COOLDOWN") {
         hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
       } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready (and may be delivered into Setfeed).";
+        hint.textContent = "Done. Summary is ready.";
       } else if (state === "CANCELLED") {
         hint.textContent = "This lobby expired before it started.";
       } else {
@@ -727,10 +792,7 @@
       btnChat.disabled = !chatOpen;
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
 
-      // ✅ attempt summary delivery when DONE
-      if (state === "DONE") {
-        maybeDeliverSummaryToSetfeed().catch(() => {});
-      }
+      refreshSetfeedUI();
     }
 
     function renderCountdown() {
@@ -809,12 +871,10 @@
     }
 
     async function renderFeed(items) {
-      latestPulses = Array.isArray(items) ? items : [];
-      feedMeta.textContent = `${latestPulses.length} pulses`;
-
+      feedMeta.textContent = `${items.length} pulses`;
       const frag = document.createDocumentFragment();
 
-      for (const it of latestPulses) {
+      for (const it of items) {
         const card = document.createElement("div");
         card.className = "dv-pulse";
 
@@ -865,6 +925,28 @@
       chat.scrollTop = chat.scrollHeight;
     }
 
+    function renderSummaryIfReady() {
+      const has = !!(session && session.summaryText);
+      setHidden(summaryPanel, !(state === "DONE" && has));
+      if (state === "DONE" && has) {
+        summaryTextEl.textContent = session.summaryText || "";
+        const gen = session.summaryStats && session.summaryStats.generatedAtUtc ? session.summaryStats.generatedAtUtc : (session.summaryReadyAtUtc || "—");
+        summaryMeta.textContent = `Generated: ${gen}`;
+      }
+      refreshSetfeedUI();
+    }
+
+    async function maybeAutoSend() {
+      if (!getAutosend()) return;
+      if (hasSentForThisSession()) return;
+      const code = (setfeedCodeInput.value || "").trim();
+      if (!code) return;
+      if (!(state === "DONE" && session && session.summaryText)) return;
+
+      // fire once
+      await sendSummaryToSetfeed();
+    }
+
     // -------------------------
     // Boot: ensure signed in + join
     // -------------------------
@@ -909,6 +991,10 @@
           setHidden(hostControls, !isHost);
 
           renderCountdown();
+          renderSummaryIfReady();
+
+          // attempt autosend once summary appears
+          maybeAutoSend().catch(() => {});
         }, (err) => {
           console.error(err);
           setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
@@ -945,6 +1031,7 @@
       );
 
       setInterval(renderCountdown, 500);
+      refreshSetfeedUI();
     }
 
     auth.onAuthStateChanged(() => boot());
