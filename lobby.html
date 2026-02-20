@@ -46,9 +46,14 @@
         const storedRaw = readStoredRaw();
         const stored = storedRaw || "system";
 
-        if (!storedRaw) root.setAttribute("data-theme", "dark");
-        else if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
-        else root.removeAttribute("data-theme");
+        // ✅ lobby default: dark when unset
+        if (!storedRaw) {
+          root.setAttribute("data-theme", "dark");
+        } else if (stored === "light" || stored === "dark") {
+          root.setAttribute("data-theme", stored);
+        } else {
+          root.removeAttribute("data-theme");
+        }
 
         const effective =
           root.getAttribute("data-theme") ||
@@ -118,6 +123,206 @@
       });
     })();
   </script>
+
+  <style>
+    /* ------------------------------------
+       Lobby polish (no styles.css change yet)
+       Goals:
+       - Reduce visual competition in left column (Setfeed block quieter + collapsible)
+       - Add calm empty states for feed + chat
+       - Improve grouping / spacing and “inactive chat” feel
+    ------------------------------------- */
+
+    .hidden{ display:none !important; }
+
+    /* Calm empty states */
+    .dv-empty{
+      border-radius: 14px;
+      border: 1px dashed rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      padding: 14px 12px;
+      color: rgba(233,238,246,0.72);
+      font-size: 13.4px;
+      line-height: 1.5;
+      text-align: center;
+      margin: 2px;
+    }
+    :root[data-theme="light"] .dv-empty{
+      border-color: rgba(28,27,31,0.14);
+      background: rgba(28,27,31,0.03);
+      color: rgba(73,69,79,0.82);
+    }
+
+    /* Chat inactive state (keeps layout stable but reads “closed”) */
+    .dv-chat-wrap.dv-inactive{
+      opacity: 0.72;
+    }
+    .dv-chat-wrap.dv-inactive .dv-chat{
+      background: color-mix(in srgb, var(--dv-surface) 80%, transparent);
+    }
+
+    /* Tighten panel headings slightly (less shouty) */
+    .dv-panel-head .dv-h2{
+      font-weight: var(--dv-fw-medium);
+      letter-spacing: -0.08px;
+    }
+
+    /* Host controls row: align select + buttons and keep consistent rhythm */
+    .dv-hostrow{
+      display: flex;
+      gap: 10px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    .dv-hostrow .dv-select,
+    .dv-hostrow .dv-btn{
+      min-height: 42px;
+    }
+
+    /* Setfeed block: quieter + collapsible */
+    .dv-summary{
+      margin-top: 12px;
+      border-radius: 16px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.035);
+      padding: 12px;
+    }
+    :root[data-theme="light"] .dv-summary{
+      border-color: rgba(28,27,31,0.12);
+      background: rgba(28,27,31,0.03);
+    }
+
+    .dv-summary-head{
+      display:flex;
+      align-items:center;
+      justify-content: space-between;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    /* ✅ Make "Setfeed summary delivery" less harsh */
+    .dv-summary h3{
+      margin: 0;
+      font-size: 13.4px;
+      font-weight: 520;
+      letter-spacing: -0.02px;
+      opacity: 0.86;
+      color: rgba(233,238,246,0.88);
+    }
+    :root[data-theme="light"] .dv-summary h3{
+      color: rgba(28,27,31,0.86);
+    }
+
+    .dv-summary-toggle{
+      appearance:none;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.03);
+      color: rgba(233,238,246,0.78);
+      border-radius: 999px;
+      padding: 8px 10px;
+      cursor: pointer;
+      font-size: 12.8px;
+      line-height: 1;
+      user-select: none;
+      min-height: 36px;
+      white-space: nowrap;
+    }
+    .dv-summary-toggle:hover{
+      background: rgba(255,255,255,0.06);
+      color: rgba(233,238,246,0.92);
+    }
+    :root[data-theme="light"] .dv-summary-toggle{
+      border-color: rgba(28,27,31,0.12);
+      background: rgba(28,27,31,0.03);
+      color: rgba(73,69,79,0.86);
+    }
+    :root[data-theme="light"] .dv-summary-toggle:hover{
+      background: rgba(28,27,31,0.06);
+      color: rgba(28,27,31,0.92);
+    }
+
+    .dv-summary-body.dv-collapsed{
+      display:none;
+    }
+
+    /* Setfeed inner spacing */
+    .dv-minirow{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 10px;
+    }
+    .dv-input {
+      width: 100%;
+      border-radius: 12px;
+      padding: 10px 12px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(15,17,20,0.55);
+      color: rgba(233,238,246,0.92);
+      outline: none;
+      min-height: 42px;
+    }
+    :root[data-theme="light"] .dv-input{
+      border-color: rgba(28,27,31,0.12);
+      background: rgba(255,255,255,0.72);
+      color: rgba(28,27,31,0.92);
+    }
+    .dv-muted2 { font-size: 12.8px; color: rgba(233,238,246,0.70); line-height: 1.35; }
+    :root[data-theme="light"] .dv-muted2{ color: rgba(73,69,79,0.78); }
+
+    /* ✅ "Choose file" as a chip (hide native input; click chip triggers it) */
+    .dv-file{ display:none !important; }
+
+    .dv-file-chip{
+      display:inline-flex;
+      align-items:center;
+      gap:10px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.06);
+      color: rgba(233,238,246,0.92);
+      font: inherit;
+      line-height: 1;
+      cursor: pointer;
+      user-select: none;
+      white-space: nowrap;
+      min-height: 42px;
+    }
+    :root[data-theme="light"] .dv-file-chip{
+      border-color: rgba(28,27,31,0.12);
+      background: rgba(28,27,31,0.03);
+      color: rgba(28,27,31,0.92);
+    }
+    .dv-file-chip:active{ transform: translateY(1px); opacity: 0.95; }
+    .dv-file-dot{
+      width: 8px;
+      height: 8px;
+      border-radius: 999px;
+      background: rgba(233,238,246,0.55);
+      flex: 0 0 auto;
+    }
+    :root[data-theme="light"] .dv-file-dot{ background: rgba(73,69,79,0.55); }
+    .dv-file-name{
+      max-width: 240px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .dv-file-clear{
+      border: 0;
+      background: transparent;
+      color: rgba(233,238,246,0.75);
+      padding: 0;
+      margin-left: 2px;
+      cursor: pointer;
+      font: inherit;
+      line-height: 1;
+    }
+    :root[data-theme="light"] .dv-file-clear{ color: rgba(73,69,79,0.72); }
+    .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
+    :root[data-theme="light"] .dv-file-clear:hover{ color: rgba(28,27,31,0.92); }
+  </style>
 </head>
 
 <body class="dv-bg">
@@ -169,27 +374,41 @@
               <button class="dv-btn" id="btn-ready" type="button">Ready</button>
 
               <div class="dv-host hidden" id="hostControls">
-                <select id="duration" class="dv-select" aria-label="Duration">
-                  <option value="4">4 min</option>
-                  <option value="5">5 min</option>
-                </select>
-                <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
+                <div class="dv-hostrow">
+                  <select id="duration" class="dv-select" aria-label="Duration">
+                    <option value="4">4 min</option>
+                    <option value="5">5 min</option>
+                  </select>
+                  <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
+                </div>
               </div>
             </div>
 
-            <p class="dv-help" id="hint">
+            <p class="dv-help dv-help-tight" id="hint">
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- Setfeed summary delivery -->
+            <!-- Setfeed summary delivery (quieter + collapsible) -->
             <div class="dv-summary" id="setfeedPanel">
-              <h3 class="dv-summary-title">Setfeed summary delivery</h3>
-              <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
-              <div class="dv-minirow">
-                <button class="dv-btn" id="btn-toggle-autosend" type="button">Auto-send: Off</button>
-                <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
+              <div class="dv-summary-head">
+                <h3>Setfeed summary delivery</h3>
+                <button class="dv-summary-toggle" id="btn-toggle-setfeed" type="button" aria-expanded="false">
+                  Show
+                </button>
               </div>
-              <div class="dv-muted2" id="setfeedStatus">Tip: each participant uses their own receive code (summary encrypts locally).</div>
+
+              <div id="setfeedBody" class="dv-summary-body dv-collapsed">
+                <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
+
+                <div class="dv-minirow">
+                  <button class="dv-btn dv-btn-quiet" id="btn-toggle-autosend" type="button">Auto-send: Off</button>
+                  <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
+                </div>
+
+                <div class="dv-muted2" id="setfeedStatus">
+                  Tip: each participant uses their own receive code (summary encrypts locally).
+                </div>
+              </div>
             </div>
           </div>
         </aside>
@@ -202,7 +421,12 @@
               <div class="dv-muted" id="feedMeta">—</div>
             </div>
 
-            <div class="dv-feed" id="feed"></div>
+            <div class="dv-feed" id="feed">
+              <div class="dv-empty" id="feedEmpty">
+                No pulses yet.<br/>
+                When the host starts, you’ll see anonymous live preview here.
+              </div>
+            </div>
 
             <div class="dv-composer" id="composer">
               <div class="dv-compose-row">
@@ -211,8 +435,10 @@
               </div>
 
               <div class="dv-compose-row dv-compose-row2">
-                <input class="dv-file dv-file-input" id="pulseImage" type="file" accept="image/*" />
+                <!-- native file input kept for functionality but hidden -->
+                <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
 
+                <!-- ✅ chip trigger -->
                 <button class="dv-file-chip" id="btn-choose-image" type="button" aria-label="Choose image">
                   <span class="dv-file-dot" aria-hidden="true"></span>
                   <span id="dv-file-chip-label">Choose image</span>
@@ -228,12 +454,24 @@
 
             <!-- Summary view (DONE) -->
             <div class="dv-summary hidden" id="summaryPanel">
-              <h3 class="dv-summary-title">Session summary</h3>
-              <pre id="summaryText">—</pre>
+              <div class="dv-summary-head">
+                <h3>Session summary</h3>
+                <span class="dv-muted2" id="summaryMeta">Generated on DONE.</span>
+              </div>
+
+              <pre id="summaryText" style="
+                margin: 0;
+                white-space: pre-wrap;
+                word-break: break-word;
+                font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, 'Liberation Mono', 'Courier New', monospace;
+                font-size: 12.8px;
+                line-height: 1.4;
+                color: rgba(233,238,246,0.92);
+              ">—</pre>
+
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
               </div>
-              <div class="dv-muted2" id="summaryMeta">Generated on DONE.</div>
             </div>
 
           </div>
@@ -241,13 +479,18 @@
 
         <!-- Right: chat (cooldown/done only) -->
         <aside class="dv-side">
-          <div class="dv-panel">
+          <div class="dv-panel dv-chat-wrap" id="chatWrap">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Chat</h2>
               <div class="dv-muted" id="chatMeta">Opens in cooldown</div>
             </div>
 
-            <div class="dv-chat" id="chat"></div>
+            <div class="dv-chat" id="chat">
+              <div class="dv-empty" id="chatEmpty">
+                Chat opens during cooldown.<br/>
+                It’s for attribution guesses — not discussion.
+              </div>
+            </div>
 
             <div class="dv-chatbox">
               <input id="chatText" maxlength="300" placeholder="Ask who sent what…" />
@@ -276,6 +519,7 @@
 
     const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
+    const SETFEED_COLLAPSED_KEY = "dv_setfeed_collapsed";
 
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
 
@@ -350,6 +594,7 @@
 
     const feed = document.getElementById("feed");
     const feedMeta = document.getElementById("feedMeta");
+    const feedEmpty = document.getElementById("feedEmpty");
 
     const composer = document.getElementById("composer");
     const pulseText = document.getElementById("pulseText");
@@ -358,23 +603,32 @@
     const btnImage = document.getElementById("btn-image");
     const composerHelp = document.getElementById("composerHelp");
 
+    // ✅ chip choose-image UI
     const btnChooseImage = document.getElementById("btn-choose-image");
     const chipLabel = document.getElementById("dv-file-chip-label");
 
+    const chatWrap = document.getElementById("chatWrap");
     const chat = document.getElementById("chat");
+    const chatEmpty = document.getElementById("chatEmpty");
     const chatText = document.getElementById("chatText");
     const btnChat = document.getElementById("btn-chat");
     const chatMeta = document.getElementById("chatMeta");
 
+    // Summary UI
     const summaryPanel = document.getElementById("summaryPanel");
     const summaryTextEl = document.getElementById("summaryText");
     const summaryMeta = document.getElementById("summaryMeta");
     const btnSendSummary = document.getElementById("btn-send-summary");
     const btnSendSummary2 = document.getElementById("btn-send-summary-2");
 
+    // Setfeed delivery UI
     const setfeedCodeInput = document.getElementById("setfeedCode");
     const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
     const setfeedStatus = document.getElementById("setfeedStatus");
+
+    // Collapsible Setfeed controls
+    const btnToggleSetfeed = document.getElementById("btn-toggle-setfeed");
+    const setfeedBody = document.getElementById("setfeedBody");
 
     // -------------------------
     // Firestore refs
@@ -435,6 +689,27 @@
       btnChooseImage.addEventListener("click", () => pulseImage.click());
       pulseImage.addEventListener("change", renderChosenFileName);
       renderChosenFileName();
+    }
+
+    // -------------------------
+    // Setfeed collapsible state
+    // -------------------------
+    function getSetfeedCollapsed() {
+      try { return localStorage.getItem(SETFEED_COLLAPSED_KEY) !== "false"; } catch (_) { return true; }
+    }
+    function setSetfeedCollapsed(v) {
+      const collapsed = !!v;
+      if (setfeedBody) setfeedBody.classList.toggle("dv-collapsed", collapsed);
+      if (btnToggleSetfeed) {
+        btnToggleSetfeed.textContent = collapsed ? "Show" : "Hide";
+        btnToggleSetfeed.setAttribute("aria-expanded", collapsed ? "false" : "true");
+      }
+      try { localStorage.setItem(SETFEED_COLLAPSED_KEY, collapsed ? "true" : "false"); } catch (_) {}
+    }
+    if (btnToggleSetfeed) {
+      btnToggleSetfeed.addEventListener("click", () => setSetfeedCollapsed(!getSetfeedCollapsed()));
+      // initial render
+      setSetfeedCollapsed(getSetfeedCollapsed());
     }
 
     // -------------------------
@@ -558,7 +833,7 @@
 
         const enc = await encryptForCode(codeRaw, session.summaryText);
 
-        const deliverAtLocalIso = new Date().toISOString();
+        const deliverAtLocalIso = new Date().toISOString(); // has Z offset
         const call = functions.httpsCallable("sendSignedCiphertext");
 
         await call({
@@ -587,7 +862,9 @@
     // -------------------------
     // Actions
     // -------------------------
-    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
+    btnHome.addEventListener("click", () => {
+      window.location.href = "./index.html";
+    });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -750,6 +1027,7 @@
       }
     });
 
+    // Setfeed controls
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
@@ -771,12 +1049,19 @@
       state = nextState || "—";
       statePill.textContent = state;
 
-      if (state === "LOBBY") hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
-      else if (state === "RUNNING") hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      else if (state === "COOLDOWN") hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
-      else if (state === "DONE") hint.textContent = "Done. Summary is ready.";
-      else if (state === "CANCELLED") hint.textContent = "This lobby expired before it started.";
-      else hint.textContent = "—";
+      if (state === "LOBBY") {
+        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
+      } else if (state === "RUNNING") {
+        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      } else if (state === "COOLDOWN") {
+        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+      } else if (state === "DONE") {
+        hint.textContent = "Done. Summary is ready.";
+      } else if (state === "CANCELLED") {
+        hint.textContent = "This lobby expired before it started.";
+      } else {
+        hint.textContent = "—";
+      }
 
       setHidden(composer, state !== "RUNNING");
 
@@ -784,6 +1069,13 @@
       chatText.disabled = !chatOpen;
       btnChat.disabled = !chatOpen;
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
+
+      if (chatWrap) chatWrap.classList.toggle("dv-inactive", !chatOpen);
+
+      // When DONE: gently surface Setfeed tools (auto-expand once)
+      if (state === "DONE") {
+        setSetfeedCollapsed(false);
+      }
 
       refreshSetfeedUI();
     }
@@ -865,6 +1157,10 @@
 
     async function renderFeed(items) {
       feedMeta.textContent = `${items.length} pulses`;
+
+      // Empty-state visibility
+      if (feedEmpty) feedEmpty.classList.toggle("hidden", items.length > 0);
+
       const frag = document.createDocumentFragment();
 
       for (const it of items) {
@@ -900,12 +1196,19 @@
         frag.appendChild(card);
       }
 
+      // Keep empty state node at top; clear only generated pulses
+      // Simplest: clear feed and re-add empty if needed, then pulses.
       feed.innerHTML = "";
+      if (items.length === 0 && feedEmpty) feed.appendChild(feedEmpty);
       feed.appendChild(frag);
+
       feed.scrollTop = feed.scrollHeight;
     }
 
     function renderChat(items) {
+      // Empty-state visibility
+      if (chatEmpty) chatEmpty.classList.toggle("hidden", items.length > 0);
+
       const frag = document.createDocumentFragment();
       for (const m of items) {
         const row = document.createElement("div");
@@ -913,8 +1216,11 @@
         row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
         frag.appendChild(row);
       }
+
       chat.innerHTML = "";
+      if (items.length === 0 && chatEmpty) chat.appendChild(chatEmpty);
       chat.appendChild(frag);
+
       chat.scrollTop = chat.scrollHeight;
     }
 
@@ -935,6 +1241,7 @@
       const code = (setfeedCodeInput.value || "").trim();
       if (!code) return;
       if (!(state === "DONE" && session && session.summaryText)) return;
+
       await sendSummaryToSetfeed();
     }
 
@@ -1030,6 +1337,10 @@
       for (const u of unsub) try { u(); } catch (_) {}
       unsub = [];
     });
+
+    // Init: Setfeed stored code and autosend label, but keep section collapsed by default
+    setfeedCodeInput.value = getStoredSetfeedCode();
+    refreshSetfeedUI();
   </script>
 </body>
 </html>
