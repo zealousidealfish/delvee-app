@@ -2,13 +2,9 @@
    Delvee = attentive, timed, deterministic.
    Separate visual identity from Setfeed.
 
-   Update in this replacement:
-   - Add missing layout classes used by HTML: dv-hero, dv-hero-left, dv-panel-strong, dv-panel-soft
-   - Move index/lobby inline polish into stylesheet:
-     * authed two-card centering + hide sign-in panel
-     * join-code header row helpers (dv-inline-row, dv-mini, dv-chiplike)
-     * Setfeed summary styling + softer title
-     * chip-style file picker (Choose image + filename + clear)
+   Update (consolidation):
+   - Move lobby polish (Setfeed summary panel + file chip UI) into global styles.
+   - Add safe empty-state styling for feed/chat when blank.
 */
 
 :root{
@@ -194,9 +190,7 @@ a:hover{ text-decoration: underline; }
   box-shadow:
     0 1px 0 rgba(255,255,255,0.22) inset,
     0 16px 30px rgba(0,0,0,0.12);
-  display: inline-block;
 }
-a.dv-mark{ text-decoration: none; }
 .dv-title{
   font-weight: var(--dv-fw-bold);
   letter-spacing: -0.18px;
@@ -237,10 +231,6 @@ a.dv-mark{ text-decoration: none; }
   padding: var(--dv-s-6) var(--dv-s-4) var(--dv-s-8);
 }
 .dv-wrap-wide{ max-width: var(--dv-max-wide); }
-
-/* Hero helpers (used on index) */
-.dv-hero{ }
-.dv-hero-left{ max-width: 980px; margin: 0 auto; }
 
 /* Card */
 .dv-card{
@@ -299,19 +289,6 @@ a.dv-mark{ text-decoration: none; }
   .dv-grid, .dv-grid-3{ grid-template-columns: 1fr; }
 }
 
-/* ✅ Authed layout: hide sign-in panel and center the remaining two cards */
-.dv-grid.dv-grid-3{
-  gap: 16px;
-  align-items: stretch;
-}
-body.dv-authed .dv-grid.dv-grid-3{
-  grid-template-columns: repeat(2, minmax(0, 420px));
-  justify-content: center;
-}
-body.dv-authed #signInPanel{
-  display: none !important;
-}
-
 /* Status */
 .dv-status{
   margin-top: var(--dv-s-4);
@@ -324,11 +301,6 @@ body.dv-authed #signInPanel{
   align-items: center;
 }
 .dv-status-tight{ margin-top: 0; }
-.dv-status-center{
-  max-width: 880px;
-  margin-left: auto;
-  margin-right: auto;
-}
 .dv-status-title{
   color: var(--dv-text);
   font-weight: var(--dv-fw-bold);
@@ -364,13 +336,6 @@ body.dv-authed #signInPanel{
   background: color-mix(in srgb, var(--dv-surface-2) 84%, transparent);
   padding: var(--dv-s-5);
 }
-.dv-panel-strong{
-  background: color-mix(in srgb, var(--dv-surface-2) 88%, transparent);
-  border-color: color-mix(in srgb, var(--dv-primary) 14%, var(--dv-line));
-}
-.dv-panel-soft{
-  background: color-mix(in srgb, var(--dv-surface-2) 78%, transparent);
-}
 .dv-panel-head{
   display:flex;
   align-items: baseline;
@@ -397,36 +362,8 @@ body.dv-authed #signInPanel{
   font-weight: var(--dv-fw-medium);
 }
 
-/* Join-code header row helpers (index) */
-.dv-inline-row{
-  display:flex;
-  gap: 10px;
-  align-items:center;
-  justify-content: space-between;
-  flex-wrap: wrap;
-}
-.dv-label-block{ display:block; }
-.dv-mini{
-  font-size: 12px;
-  color: color-mix(in srgb, var(--dv-soft) 88%, transparent);
-  line-height: 1.35;
-}
-.dv-chiplike{
-  display:inline-flex;
-  align-items:center;
-  gap:8px;
-  padding: 8px 12px;
-  border-radius: 999px;
-  border: 1px solid var(--dv-line);
-  background: color-mix(in srgb, var(--dv-surface-3) 14%, transparent);
-  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
-  font-size: 12.5px;
-  white-space: nowrap;
-}
-
 /* Forms */
 .dv-field{ display:flex; flex-direction: column; gap: 6px; margin-top: 10px; }
-.dv-field-tight{ margin-top: 10px; }
 .dv-field label{ color: var(--dv-soft); font-size: 13px; }
 input, textarea, select{
   width: 100%;
@@ -681,22 +618,28 @@ input:focus, textarea:focus, select:focus{
 .dv-link{ color: var(--dv-soft); }
 .dv-link:hover{ color: var(--dv-text); text-decoration: none; }
 
-/* --- Lobby: summary + inputs (Setfeed delivery) --- */
+/* ------------------------------------------------------------
+   Lobby polish consolidated from lobby.html inline styles
+   ------------------------------------------------------------ */
+
+/* Setfeed summary delivery panel (used in lobby) */
 .dv-summary{
   margin-top: 12px;
   border-radius: 14px;
-  border: 1px solid var(--dv-line);
-  background: color-mix(in srgb, var(--dv-surface-3) 12%, transparent);
+  border: 1px solid rgba(255,255,255,0.10);
+  background: rgba(255,255,255,0.05);
   padding: 12px;
 }
-.dv-summary-title{
+
+/* Make "Setfeed summary delivery" less harsh */
+.dv-summary h3{
   margin: 0 0 8px 0;
-  font-size: 13.8px;
-  font-weight: var(--dv-fw-medium);
-  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+  font-size: 14px;
+  font-weight: 500;
   opacity: 0.92;
-  letter-spacing: -0.02px;
+  letter-spacing: 0.1px;
 }
+
 .dv-summary pre{
   margin: 0;
   white-space: pre-wrap;
@@ -704,8 +647,9 @@ input:focus, textarea:focus, select:focus{
   font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
   font-size: 12.5px;
   line-height: 1.35;
-  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
+  color: rgba(233,238,246,0.92);
 }
+
 .dv-minirow{
   display:flex;
   gap:10px;
@@ -713,23 +657,32 @@ input:focus, textarea:focus, select:focus{
   align-items:center;
   margin-top: 10px;
 }
+
 .dv-input{
   width: 100%;
   border-radius: 12px;
   padding: 10px 12px;
-  border: 1px solid var(--dv-line);
-  background: color-mix(in srgb, var(--dv-surface) 70%, transparent);
-  color: var(--dv-text);
+  border: 1px solid rgba(255,255,255,0.12);
+  background: rgba(15,17,20,0.55);
+  color: rgba(233,238,246,0.92);
   outline: none;
 }
+.dv-input:focus{
+  border-color: color-mix(in srgb, var(--dv-primary) 56%, rgba(255,255,255,0.14));
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--dv-primary) 14%, transparent);
+}
+
 .dv-muted2{
   font-size: 12px;
-  color: color-mix(in srgb, var(--dv-soft) 92%, transparent);
+  color: rgba(233,238,246,0.70);
   line-height: 1.35;
 }
 
-/* --- File input as a chip (lobby) --- */
-.dv-file-input{ display:none !important; }
+/* File chip (lobby image pulse) */
+.dv-file{
+  /* lobby uses the chip; keep native file input hidden */
+  display:none !important;
+}
 
 .dv-file-chip{
   display:inline-flex;
@@ -737,9 +690,9 @@ input:focus, textarea:focus, select:focus{
   gap:10px;
   padding: 10px 12px;
   border-radius: 999px;
-  border: 1px solid var(--dv-line);
-  background: color-mix(in srgb, var(--dv-surface-3) 16%, transparent);
-  color: color-mix(in srgb, var(--dv-text) 94%, transparent);
+  border: 1px solid rgba(255,255,255,0.14);
+  background: rgba(255,255,255,0.06);
+  color: rgba(233,238,246,0.92);
   font: inherit;
   line-height: 1;
   cursor: pointer;
@@ -754,7 +707,7 @@ input:focus, textarea:focus, select:focus{
   width: 8px;
   height: 8px;
   border-radius: 999px;
-  background: color-mix(in srgb, var(--dv-text) 55%, transparent);
+  background: rgba(233,238,246,0.55);
   flex: 0 0 auto;
 }
 .dv-file-name{
@@ -765,22 +718,26 @@ input:focus, textarea:focus, select:focus{
 .dv-file-clear{
   border: 0;
   background: transparent;
-  color: color-mix(in srgb, var(--dv-text) 72%, transparent);
+  color: rgba(233,238,246,0.75);
   padding: 0;
   margin-left: 2px;
   cursor: pointer;
   font: inherit;
   line-height: 1;
 }
-.dv-file-clear:hover{
-  color: color-mix(in srgb, var(--dv-text) 92%, transparent);
-}
+.dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
 
-/* Legacy (kept): visible file input style if ever used elsewhere */
-.dv-file{
-  padding: 8px 10px;
-  border-radius: var(--dv-r-1);
-  border: 1px solid var(--dv-line);
-  background: color-mix(in srgb, var(--dv-surface) 88%, transparent);
-  color: var(--dv-muted);
+/* Empty-state helpers (safe, no markup changes) */
+.dv-feed:empty::before,
+.dv-chat:empty::before{
+  display:block;
+  padding: 10px 10px;
+  border-radius: 12px;
+  border: 1px dashed color-mix(in srgb, var(--dv-line) 80%, transparent);
+  background: color-mix(in srgb, var(--dv-surface-3) 10%, transparent);
+  color: var(--dv-soft);
+  font-size: 13px;
+  line-height: 1.4;
 }
+.dv-feed:empty::before{ content: "No pulses yet."; }
+.dv-chat:empty::before{ content: "Chat opens during cooldown."; }
