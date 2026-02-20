@@ -1,4 +1,3 @@
-<!-- delvee/index.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -110,6 +109,10 @@
       });
     })();
   </script>
+
+  <style>
+    .hidden{ display:none !important; }
+  </style>
 </head>
 
 <body class="dv-bg">
@@ -119,13 +122,14 @@
         <div class="dv-mark" aria-hidden="true"></div>
         <div>
           <div class="dv-title">Delvee</div>
-          <div class="dv-sub">pulse ritual</div>
+          <div class="dv-sub">pulsed messaging</div>
         </div>
       </div>
       <div class="dv-top-actions">
         <button class="dv-theme-toggle" id="themeToggle" type="button">Theme</button>
         <button class="dv-chip" id="btn-resume" type="button" disabled>Resume lobby</button>
-        <button class="dv-btn dv-btn-quiet" id="btn-signout" type="button" disabled>Sign out</button>
+        <!-- ✅ Hide when not signed in -->
+        <button class="dv-btn dv-btn-quiet hidden" id="btn-signout" type="button">Sign out</button>
       </div>
     </div>
   </header>
@@ -136,7 +140,6 @@
         <h1 class="dv-h1">Timed collaborative pulses.</h1>
         <p class="dv-lead">
           Anonymous live preview. Throttled submissions. A short window, then reveal.
-          Delvee is attentive — not calm — but still deterministic.
         </p>
 
         <div class="dv-status" id="status">
@@ -197,15 +200,15 @@
             <div class="dv-divider"></div>
 
             <div class="dv-help">
-              You only need sign-in to enter lobbies. The live preview remains anonymous.
+              Sign-in is required on the web today. Live preview remains anonymous.
             </div>
           </div>
 
-          <!-- Principles -->
+          <!-- Session rules -->
           <div class="dv-panel dv-panel-soft">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Session rules</h2>
-              <div class="dv-pill">deterministic</div>
+              <div class="dv-muted">short window</div>
             </div>
 
             <div class="dv-kv">
@@ -294,7 +297,9 @@
 
       btnCreate.disabled = !(authed && hasAlias);
       btnJoin.disabled = !(authed && hasAlias && hasSid);
-      btnSignout.disabled = !authed;
+
+      // ✅ hide sign out unless authed
+      btnSignout.classList.toggle("hidden", !authed);
 
       const last = getLastSession();
       btnResume.disabled = !(authed && last);
