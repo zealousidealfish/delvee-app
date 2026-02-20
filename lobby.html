@@ -1,4 +1,3 @@
-<!-- delvee/lobby.html (FULL FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -41,15 +40,11 @@
       function readStoredRaw(){
         try { return localStorage.getItem(THEME_KEY); } catch (_) { return null; }
       }
-      function readStored(){
-        return readStoredRaw() || "system";
-      }
 
       function applyTheme(){
         const storedRaw = readStoredRaw();
         const stored = storedRaw || "system";
 
-        // ✅ lobby default: dark when unset
         if (!storedRaw) {
           root.setAttribute("data-theme", "dark");
         } else if (stored === "light" || stored === "dark") {
@@ -103,22 +98,14 @@
 
         if (window.matchMedia) {
           const mq = window.matchMedia("(prefers-color-scheme: dark)");
-          try {
-            mq.addEventListener("change", () => { applyTheme(); setToggleLabel(); });
-          } catch (_) {}
+          try { mq.addEventListener("change", () => { applyTheme(); setToggleLabel(); }); } catch (_) {}
         }
       }
 
       if (document.readyState === "loading") {
-        document.addEventListener("DOMContentLoaded", () => {
-          applyTheme();
-          setToggleLabel();
-          wireToggle();
-        }, { once: true });
+        document.addEventListener("DOMContentLoaded", () => { applyTheme(); setToggleLabel(); wireToggle(); }, { once: true });
       } else {
-        applyTheme();
-        setToggleLabel();
-        wireToggle();
+        applyTheme(); setToggleLabel(); wireToggle();
       }
 
       window.addEventListener("storage", (e) => {
@@ -360,6 +347,191 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
+    // Track last rendered pulses (for summary)
+    let latestPulses = [];
+
+    // Delvee -> Setfeed delivery
+    let deliveryAttempted = false; // session-local memory
+    const DELIVERY_FLAG_KEY = `dv_delivered_summary_${sessionId}`; // localStorage idempotency fallback
+
+    // -------------------------
+    // Setfeed crypto helpers (client-side encryption)
+    // -------------------------
+    function normalizeReceiveCode(raw) {
+      return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, "");
+    }
+
+    function bytesToB64(bytes) {
+      let bin = "";
+      const arr = bytes instanceof Uint8Array ? bytes : new Uint8Array(bytes);
+      for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+      return btoa(bin);
+    }
+
+    async function sha256Hex(str) {
+      const data = new TextEncoder().encode(str);
+      const hash = await crypto.subtle.digest("SHA-256", data);
+      return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
+    }
+
+    async function deriveAesKeyFromPassphrase(passphrase, saltBytes) {
+      const passBytes = new TextEncoder().encode(passphrase);
+      const baseKey = await crypto.subtle.importKey("raw", passBytes, { name: "PBKDF2" }, false, ["deriveKey"]);
+      return await crypto.subtle.deriveKey(
+        { name: "PBKDF2", salt: saltBytes, iterations: 100000, hash: "SHA-256" },
+        baseKey,
+        { name: "AES-GCM", length: 256 },
+        false,
+        ["encrypt"]
+      );
+    }
+
+    async function encryptForCode(rawCode, plaintext) {
+      const passphrase = normalizeReceiveCode(rawCode);
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
+
+      const ptBytes = new TextEncoder().encode(String(plaintext || ""));
+      const ctBuf = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
+
+      return {
+        ciphertextB64: bytesToB64(new Uint8Array(ctBuf)),
+        ivB64: bytesToB64(iv),
+        saltB64: bytesToB64(salt)
+      };
+    }
+
+    // -------------------------
+    // Delvee summary build
+    // -------------------------
+    function buildSummaryText() {
+      const started = session && session.startsAtUtc ? session.startsAtUtc : null;
+      const ended = session && session.endAtUtc ? session.endAtUtc : null;
+
+      const total = Array.isArray(latestPulses) ? latestPulses.length : 0;
+
+      // keep summary compact: last 40 pulses
+      const tail = (latestPulses || []).slice(-40);
+
+      const lines = [];
+      lines.push("Delvee — pulse summary");
+      lines.push(`Session: ${sessionId}`);
+      if (started) lines.push(`Started: ${started}`);
+      if (ended) lines.push(`Ended: ${ended}`);
+      lines.push(`Pulses: ${total}`);
+      lines.push("");
+      lines.push("Recent pulses:");
+      for (const p of tail) {
+        if (p.kind === "text") {
+          const t = String(p.text || "").replace(/\s+/g, " ").trim();
+          lines.push(`• text: ${t}`);
+        } else if (p.kind === "image") {
+          lines.push("• image");
+        } else {
+          lines.push("• pulse");
+        }
+      }
+      lines.push("");
+      lines.push("Delivered by Delvee into Setfeed (encrypted).");
+
+      // Hard cap to avoid huge envelopes
+      const out = lines.join("\n");
+      return out.length > 4500 ? out.slice(0, 4500) + "\n…(truncated)" : out;
+    }
+
+    async function readDelveeSummaryPrefs() {
+      const call = functions.httpsCallable("getDelveeSummaryPrefs");
+      const res = await call({});
+      return (res && res.data && res.data.prefs) ? res.data.prefs : null;
+    }
+
+    async function getSetfeedReceiveCodeFromPrefs(prefs) {
+      if (!prefs || !prefs.enabled) return null;
+
+      if (prefs.destination === "setfeed_app_code") {
+        const code = prefs.setfeedAppReceiveCode || "";
+        const norm = normalizeReceiveCode(code);
+        return norm ? norm : null;
+      }
+
+      // destination: web inbox
+      const which = (prefs.setfeedWebCodeType === "personal") ? "personal" : "secure";
+      const call = functions.httpsCallable("getReceiveCodes");
+      const res = await call({});
+      const codes = (res && res.data) ? res.data : null;
+
+      const code =
+        which === "personal"
+          ? (codes && codes.personal && codes.personal.code ? codes.personal.code : null)
+          : (codes && codes.secure && codes.secure.code ? codes.secure.code : null);
+
+      return code ? normalizeReceiveCode(code) : null;
+    }
+
+    function markDeliveredFlag() {
+      try { localStorage.setItem(DELIVERY_FLAG_KEY, "true"); } catch (_) {}
+      deliveryAttempted = true;
+    }
+
+    function hasDeliveredFlag() {
+      if (deliveryAttempted) return true;
+      try { return localStorage.getItem(DELIVERY_FLAG_KEY) === "true"; } catch (_) { return false; }
+    }
+
+    async function maybeDeliverSummaryToSetfeed() {
+      // Only once, only in DONE
+      if (!auth.currentUser) return;
+      if (state !== "DONE") return;
+      if (hasDeliveredFlag()) return;
+
+      // guard against firing while pulses stream is still syncing
+      // (still okay if it’s slightly early — summary will be “recent pulses”)
+      markDeliveredFlag(); // optimistic: prevents spam loops
+
+      try {
+        setStatus("good", "Delivering summary…", "Sending Delvee summary into Setfeed.");
+        const prefs = await readDelveeSummaryPrefs();
+        if (!prefs || !prefs.enabled) {
+          setStatus("good", "Done", "Summary delivery is off (prefs disabled).");
+          return;
+        }
+
+        const receiveCode = await getSetfeedReceiveCodeFromPrefs(prefs);
+        if (!receiveCode) {
+          setStatus("warn", "No destination code", "Set a Delvee summary destination in Setfeed → Receive.");
+          return;
+        }
+
+        const normalized = normalizeReceiveCode(receiveCode);
+        const codeHash = await sha256Hex(normalized);
+
+        const summary = buildSummaryText();
+        const enc = await encryptForCode(normalized, summary);
+
+        const tz = (Intl.DateTimeFormat().resolvedOptions().timeZone) || "UTC";
+        const deliverAtLocalIso = new Date().toISOString(); // includes Z offset
+        const clientRequestId = `delvee_summary_${sessionId}`; // ✅ idempotent doc id
+
+        const send = functions.httpsCallable("sendSignedCiphertext");
+        await send({
+          codeHash,
+          ciphertext: enc.ciphertextB64,
+          iv: enc.ivB64,
+          salt: enc.saltB64,
+          deliverAtLocalIso,
+          userTimezone: tz,
+          clientRequestId,
+          attachments: []
+        });
+
+        setStatus("good", "Summary delivered", "Delivered into Setfeed (signed inbox).");
+      } catch (e) {
+        console.error("[deliver summary] failed:", e);
+        setStatus("warn", "Summary failed", (e && e.message) ? e.message : "Couldn’t deliver summary.");
+      }
+    }
+
     // -------------------------
     // Actions
     // -------------------------
@@ -541,7 +713,7 @@
       } else if (state === "COOLDOWN") {
         hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
       } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready (next: animated view).";
+        hint.textContent = "Done. Summary is ready (and may be delivered into Setfeed).";
       } else if (state === "CANCELLED") {
         hint.textContent = "This lobby expired before it started.";
       } else {
@@ -554,6 +726,11 @@
       chatText.disabled = !chatOpen;
       btnChat.disabled = !chatOpen;
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
+
+      // ✅ attempt summary delivery when DONE
+      if (state === "DONE") {
+        maybeDeliverSummaryToSetfeed().catch(() => {});
+      }
     }
 
     function renderCountdown() {
@@ -632,10 +809,12 @@
     }
 
     async function renderFeed(items) {
-      feedMeta.textContent = `${items.length} pulses`;
+      latestPulses = Array.isArray(items) ? items : [];
+      feedMeta.textContent = `${latestPulses.length} pulses`;
+
       const frag = document.createDocumentFragment();
 
-      for (const it of items) {
+      for (const it of latestPulses) {
         const card = document.createElement("div");
         card.className = "dv-pulse";
 
