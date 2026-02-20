@@ -46,14 +46,9 @@
         const storedRaw = readStoredRaw();
         const stored = storedRaw || "system";
 
-        // ✅ lobby default: dark when unset
-        if (!storedRaw) {
-          root.setAttribute("data-theme", "dark");
-        } else if (stored === "light" || stored === "dark") {
-          root.setAttribute("data-theme", stored);
-        } else {
-          root.removeAttribute("data-theme");
-        }
+        if (!storedRaw) root.setAttribute("data-theme", "dark");
+        else if (stored === "light" || stored === "dark") root.setAttribute("data-theme", stored);
+        else root.removeAttribute("data-theme");
 
         const effective =
           root.getAttribute("data-theme") ||
@@ -123,93 +118,6 @@
       });
     })();
   </script>
-
-  <style>
-    /* Small local additions (kept minimal) */
-    .dv-summary {
-      margin-top: 12px;
-      border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.05);
-      padding: 12px;
-    }
-
-    /* ✅ Make "Setfeed summary delivery" less harsh */
-    .dv-summary h3{
-      margin: 0 0 8px 0;
-      font-size: 14px;
-      font-weight: 500;        /* was default bold; soften */
-      opacity: 0.92;           /* slight soften */
-      letter-spacing: 0.1px;
-    }
-
-    .dv-summary pre{
-      margin: 0;
-      white-space: pre-wrap;
-      word-break: break-word;
-      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
-      font-size: 12.5px;
-      line-height: 1.35;
-      color: rgba(233,238,246,0.92);
-    }
-    .dv-minirow { display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top: 10px; }
-    .dv-input {
-      width: 100%;
-      border-radius: 12px;
-      padding: 10px 12px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(15,17,20,0.55);
-      color: rgba(233,238,246,0.92);
-      outline: none;
-    }
-    .dv-muted2 { font-size: 12px; color: rgba(233,238,246,0.70); line-height: 1.35; }
-
-    /* ✅ "Choose file" as a chip (hide native input; click chip triggers it) */
-    .dv-file{ display:none !important; }
-
-    .dv-file-chip{
-      display:inline-flex;
-      align-items:center;
-      gap:10px;
-      padding: 10px 12px;
-      border-radius: 999px;
-      border: 1px solid rgba(255,255,255,0.14);
-      background: rgba(255,255,255,0.06);
-      color: rgba(233,238,246,0.92);
-      font: inherit;
-      line-height: 1;
-      cursor: pointer;
-      user-select: none;
-      white-space: nowrap;
-    }
-    .dv-file-chip:active{
-      transform: translateY(1px);
-      opacity: 0.95;
-    }
-    .dv-file-dot{
-      width: 8px;
-      height: 8px;
-      border-radius: 999px;
-      background: rgba(233,238,246,0.55);
-      flex: 0 0 auto;
-    }
-    .dv-file-name{
-      max-width: 240px;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .dv-file-clear{
-      border: 0;
-      background: transparent;
-      color: rgba(233,238,246,0.75);
-      padding: 0;
-      margin-left: 2px;
-      cursor: pointer;
-      font: inherit;
-      line-height: 1;
-    }
-    .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
-  </style>
 </head>
 
 <body class="dv-bg">
@@ -275,7 +183,7 @@
 
             <!-- Setfeed summary delivery -->
             <div class="dv-summary" id="setfeedPanel">
-              <h3>Setfeed summary delivery</h3>
+              <h3 class="dv-summary-title">Setfeed summary delivery</h3>
               <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
               <div class="dv-minirow">
                 <button class="dv-btn" id="btn-toggle-autosend" type="button">Auto-send: Off</button>
@@ -303,10 +211,8 @@
               </div>
 
               <div class="dv-compose-row dv-compose-row2">
-                <!-- native file input kept for functionality but hidden -->
-                <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
+                <input class="dv-file dv-file-input" id="pulseImage" type="file" accept="image/*" />
 
-                <!-- ✅ chip trigger -->
                 <button class="dv-file-chip" id="btn-choose-image" type="button" aria-label="Choose image">
                   <span class="dv-file-dot" aria-hidden="true"></span>
                   <span id="dv-file-chip-label">Choose image</span>
@@ -322,7 +228,7 @@
 
             <!-- Summary view (DONE) -->
             <div class="dv-summary hidden" id="summaryPanel">
-              <h3>Session summary</h3>
+              <h3 class="dv-summary-title">Session summary</h3>
               <pre id="summaryText">—</pre>
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
@@ -452,7 +358,6 @@
     const btnImage = document.getElementById("btn-image");
     const composerHelp = document.getElementById("composerHelp");
 
-    // ✅ chip choose-image UI
     const btnChooseImage = document.getElementById("btn-choose-image");
     const chipLabel = document.getElementById("dv-file-chip-label");
 
@@ -461,14 +366,12 @@
     const btnChat = document.getElementById("btn-chat");
     const chatMeta = document.getElementById("chatMeta");
 
-    // Summary UI
     const summaryPanel = document.getElementById("summaryPanel");
     const summaryTextEl = document.getElementById("summaryText");
     const summaryMeta = document.getElementById("summaryMeta");
     const btnSendSummary = document.getElementById("btn-send-summary");
     const btnSendSummary2 = document.getElementById("btn-send-summary-2");
 
-    // Setfeed delivery UI
     const setfeedCodeInput = document.getElementById("setfeedCode");
     const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
     const setfeedStatus = document.getElementById("setfeedStatus");
@@ -507,7 +410,6 @@
         return;
       }
 
-      // show filename + small clear button inline
       chipLabel.innerHTML = "";
       const name = document.createElement("span");
       name.className = "dv-file-name";
@@ -545,13 +447,6 @@
       const arr = (bytes instanceof Uint8Array) ? bytes : new Uint8Array(bytes);
       for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
       return btoa(bin);
-    }
-
-    function b64ToBytes(b64) {
-      const bin = atob(b64);
-      const out = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-      return out;
     }
 
     async function sha256Hex(str) {
@@ -663,7 +558,7 @@
 
         const enc = await encryptForCode(codeRaw, session.summaryText);
 
-        const deliverAtLocalIso = new Date().toISOString(); // has Z offset
+        const deliverAtLocalIso = new Date().toISOString();
         const call = functions.httpsCallable("sendSignedCiphertext");
 
         await call({
@@ -692,9 +587,7 @@
     // -------------------------
     // Actions
     // -------------------------
-    btnHome.addEventListener("click", () => {
-      window.location.href = "./index.html";
-    });
+    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -857,7 +750,6 @@
       }
     });
 
-    // Setfeed controls
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
@@ -879,19 +771,12 @@
       state = nextState || "—";
       statePill.textContent = state;
 
-      if (state === "LOBBY") {
-        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
-      } else if (state === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      } else if (state === "COOLDOWN") {
-        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
-      } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready.";
-      } else if (state === "CANCELLED") {
-        hint.textContent = "This lobby expired before it started.";
-      } else {
-        hint.textContent = "—";
-      }
+      if (state === "LOBBY") hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
+      else if (state === "RUNNING") hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      else if (state === "COOLDOWN") hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+      else if (state === "DONE") hint.textContent = "Done. Summary is ready.";
+      else if (state === "CANCELLED") hint.textContent = "This lobby expired before it started.";
+      else hint.textContent = "—";
 
       setHidden(composer, state !== "RUNNING");
 
@@ -1050,8 +935,6 @@
       const code = (setfeedCodeInput.value || "").trim();
       if (!code) return;
       if (!(state === "DONE" && session && session.summaryText)) return;
-
-      // fire once
       await sendSummaryToSetfeed();
     }
 
@@ -1101,7 +984,6 @@
           renderCountdown();
           renderSummaryIfReady();
 
-          // attempt autosend once summary appears
           maybeAutoSend().catch(() => {});
         }, (err) => {
           console.error(err);
