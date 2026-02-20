@@ -90,19 +90,20 @@
         <div class="dv-right" id="countdown"></div>
       </div>
 
-      <!-- Immersive layout: participants | feed | chat -->
-      <div class="dv-layout-immersive">
-        <aside class="dv-immersive-side">
+      <div class="dv-layout">
+        <!-- Left: participants -->
+        <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Participants</h2>
               <div class="dv-pill" id="statePill">—</div>
             </div>
+
             <div class="dv-list" id="participants"></div>
 
-            <div style="height: 12px;"></div>
+            <div class="dv-hr"></div>
 
-            <div class="dv-row">
+            <div class="dv-actions dv-actions-compact">
               <button class="dv-btn" id="btn-ready" type="button">Ready</button>
 
               <div class="dv-host hidden" id="hostControls">
@@ -114,41 +115,42 @@
               </div>
             </div>
 
-            <div class="dv-help" id="hint">Anonymous live preview during RUNNING. Chat opens during cooldown.</div>
+            <p class="dv-help" id="hint">
+              This is the threshold. Ready means you’re in. The host begins the window.
+            </p>
           </div>
         </aside>
 
-        <section class="dv-immersive-main">
+        <!-- Center: live feed + composer -->
+        <section class="dv-main">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Live preview</h2>
               <div class="dv-muted" id="feedMeta">—</div>
             </div>
 
-            <div class="dv-feed dv-feed-immersive" id="feed"></div>
+            <div class="dv-feed" id="feed"></div>
 
-            <div class="dv-slab" id="composer" style="margin-top: 12px;">
-              <div class="dv-slab-head">
-                <div class="dv-slab-title">Pulse</div>
-                <div class="dv-soft" id="composerState">—</div>
-              </div>
-
-              <div class="dv-row" style="align-items: stretch;">
+            <div class="dv-composer" id="composer">
+              <div class="dv-compose-row">
                 <textarea id="pulseText" maxlength="100" placeholder="Write a pulse (≤100 chars)"></textarea>
                 <button class="dv-btn dv-btn-primary" id="btn-pulse" type="button">Pulse</button>
               </div>
 
-              <div class="dv-row">
+              <div class="dv-compose-row dv-compose-row2">
                 <input class="dv-file" id="pulseImage" type="file" accept="image/*" />
-                <button class="dv-btn dv-btn-primary" id="btn-image" type="button">Pulse image</button>
+                <button class="dv-btn" id="btn-image" type="button">Pulse image</button>
               </div>
 
-              <div class="dv-help dv-help-tight" id="composerHelp">Pulses are throttled. Keep it flowing.</div>
+              <div class="dv-help dv-help-tight" id="composerHelp">
+                Fast, short, deliberate. Throttling is enforced.
+              </div>
             </div>
           </div>
         </section>
 
-        <aside class="dv-immersive-side">
+        <!-- Right: chat (cooldown/done only) -->
+        <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Chat</h2>
@@ -162,41 +164,15 @@
               <button class="dv-btn" id="btn-chat" type="button">Send</button>
             </div>
 
-            <div class="dv-help dv-help-tight" id="chatHint">Chat is rate limited. Keep it clean.</div>
+            <div class="dv-help dv-help-tight">
+              Chat is for attribution guesses — not discussion.
+            </div>
           </div>
         </aside>
       </div>
 
     </section>
   </main>
-
-  <style>
-    /* Lobby-only layout helpers */
-    .dv-layout-immersive{
-      display:grid;
-      grid-template-columns: 320px 1fr 320px;
-      gap: var(--dv-s-4);
-      margin-top: var(--dv-s-4);
-      align-items: start;
-    }
-    .dv-feed-immersive{
-      min-height: 520px;
-      max-height: 62vh;
-    }
-    .dv-immersive-side{ min-width: 0; }
-    .dv-immersive-main{ min-width: 0; }
-    @media (max-width: 1100px){
-      .dv-layout-immersive{
-        grid-template-columns: 1fr;
-      }
-      .dv-feed-immersive{
-        max-height: 58vh;
-      }
-    }
-    @media (max-width: 720px){
-      #pulseText{ min-height: 88px; }
-    }
-  </style>
 
   <script>
     // -------------------------
@@ -206,9 +182,15 @@
     const sessionId = (qs.get("session") || "").trim().toUpperCase();
 
     const ALIAS_KEY = "dv_alias";
+    const LAST_SESSION_KEY = "dv_last_session";
+
     const myAlias = (() => {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
     })();
+
+    function setLastSession(sid) {
+      try { localStorage.setItem(LAST_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
+    }
 
     function setStatus(kind, title, line) {
       const dot = document.getElementById("statusDot");
@@ -246,7 +228,9 @@
 
     if (!sessionId) {
       setStatus("warn", "Missing session", "Open a lobby from Delvee home.");
-      setTimeout(() => window.location.href = "./index.html", 800);
+      setTimeout(() => window.location.href = "./index.html", 700);
+    } else {
+      setLastSession(sessionId);
     }
 
     document.getElementById("sessionLabel").textContent = sessionId ? `Session ${sessionId}` : "Lobby";
@@ -273,7 +257,6 @@
     const feedMeta = document.getElementById("feedMeta");
 
     const composer = document.getElementById("composer");
-    const composerState = document.getElementById("composerState");
     const pulseText = document.getElementById("pulseText");
     const btnPulse = document.getElementById("btn-pulse");
     const pulseImage = document.getElementById("pulseImage");
@@ -305,11 +288,15 @@
     let pendingTextPulse = null;
     let pendingImagePulse = null;
 
-    const downloadUrlCache = new Map();
+    const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
     // -------------------------
     // Actions
     // -------------------------
+    btnHome.addEventListener("click", () => {
+      window.location.href = "./index.html";
+    });
+
     btnCopy.addEventListener("click", async () => {
       try {
         await navigator.clipboard.writeText(sessionId);
@@ -317,10 +304,6 @@
       } catch (_) {
         setStatus("warn", "Copy failed", "Copy manually from the header.");
       }
-    });
-
-    btnHome.addEventListener("click", () => {
-      window.location.href = `./index.html?session=${encodeURIComponent(sessionId)}`;
     });
 
     btnLeave.addEventListener("click", async () => {
@@ -380,7 +363,7 @@
 
         pendingTextPulse = null;
         pulseText.value = "";
-        composerHelp.textContent = "Sent.";
+        composerHelp.textContent = "Pulsed.";
       } catch (e) {
         console.error(e);
         composerHelp.textContent = "Couldn’t pulse. Try again.";
@@ -433,12 +416,16 @@
         await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: { storagePath, contentType: file.type, sizeBytes: file.size }
+          attachment: {
+            storagePath,
+            contentType: file.type,
+            sizeBytes: file.size
+          }
         });
 
         pendingImagePulse = null;
         pulseImage.value = "";
-        composerHelp.textContent = "Image sent.";
+        composerHelp.textContent = "Image pulsed.";
       } catch (e) {
         console.error(e);
         composerHelp.textContent = "Couldn’t pulse image. Try again.";
@@ -478,23 +465,17 @@
       statePill.textContent = state;
 
       if (state === "LOBBY") {
-        hint.textContent = "Ready up. Host starts when everyone is ready.";
-        composerState.textContent = "Locked";
+        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
       } else if (state === "RUNNING") {
-        hint.textContent = "Pulse window open. Feed is anonymous.";
-        composerState.textContent = "Open";
+        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
       } else if (state === "COOLDOWN") {
-        hint.textContent = "Cooldown. Chat is open. No new pulses.";
-        composerState.textContent = "Closed";
+        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
       } else if (state === "DONE") {
-        hint.textContent = "Done. Summary should be ready.";
-        composerState.textContent = "Closed";
+        hint.textContent = "Done. Summary is ready (next: animated view).";
       } else if (state === "CANCELLED") {
         hint.textContent = "This lobby expired before it started.";
-        composerState.textContent = "Closed";
       } else {
         hint.textContent = "—";
-        composerState.textContent = "—";
       }
 
       setHidden(composer, state !== "RUNNING");
@@ -505,4 +486,224 @@
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
     }
 
-   
+    function renderCountdown() {
+      if (!session) { countdownEl.textContent = ""; return; }
+
+      const now = Date.now();
+      if (state === "RUNNING" && session.endAtMillis) {
+        const left = session.endAtMillis - now;
+        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
+      } else if (state === "COOLDOWN" && session.cooldownEndsAtMillis) {
+        const left = session.cooldownEndsAtMillis - now;
+        countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
+      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
+        const left = session.reservationExpiresAtMillis - now;
+        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
+      } else {
+        countdownEl.textContent = state;
+      }
+    }
+
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await call({ sessionId, storagePath });
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
+    function renderParticipants(list) {
+      list.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
+
+      const meUid = auth.currentUser?.uid || "";
+      const frag = document.createDocumentFragment();
+
+      for (const p of list) {
+        const row = document.createElement("div");
+        row.className = "dv-person";
+
+        const left = document.createElement("div");
+        left.className = "dv-person-left";
+
+        const name = document.createElement("div");
+        name.className = "dv-person-name";
+        name.textContent = p.alias || "—";
+
+        const meta = document.createElement("div");
+        meta.className = "dv-person-meta";
+        const ready = p.ready ? "ready" : "not ready";
+        const pulses = typeof p.pulsesCount === "number" ? p.pulsesCount : 0;
+        meta.textContent = `${ready} · ${pulses} pulses`;
+
+        left.appendChild(name);
+        left.appendChild(meta);
+
+        const badge = document.createElement("div");
+        badge.className = "dv-badge";
+        badge.textContent = p.ready ? "✓" : "·";
+
+        if (p.uid === meUid) {
+          row.classList.add("me");
+          badge.classList.add("me");
+        }
+
+        row.appendChild(left);
+        row.appendChild(badge);
+        frag.appendChild(row);
+      }
+
+      participantsEl.innerHTML = "";
+      participantsEl.appendChild(frag);
+    }
+
+    async function renderFeed(items) {
+      feedMeta.textContent = `${items.length} pulses`;
+      const frag = document.createDocumentFragment();
+
+      for (const it of items) {
+        const card = document.createElement("div");
+        card.className = "dv-pulse";
+
+        const kind = document.createElement("div");
+        kind.className = "dv-pulse-kind";
+        kind.textContent = it.kind === "image" ? "image" : "text";
+        card.appendChild(kind);
+
+        if (it.kind === "text") {
+          const body = document.createElement("div");
+          body.className = "dv-pulse-text";
+          body.textContent = it.text || "";
+          card.appendChild(body);
+        } else if (it.kind === "image" && it.attachment && it.attachment.storagePath) {
+          const imgWrap = document.createElement("div");
+          imgWrap.className = "dv-pulse-imgwrap";
+
+          const img = document.createElement("img");
+          img.className = "dv-pulse-img";
+          img.alt = "Pulse image";
+
+          imgWrap.appendChild(img);
+          card.appendChild(imgWrap);
+
+          getDownloadUrl(it.attachment.storagePath)
+            .then((url) => { if (url) img.src = url; })
+            .catch(() => {});
+        }
+
+        frag.appendChild(card);
+      }
+
+      feed.innerHTML = "";
+      feed.appendChild(frag);
+      feed.scrollTop = feed.scrollHeight;
+    }
+
+    function renderChat(items) {
+      const frag = document.createDocumentFragment();
+      for (const m of items) {
+        const row = document.createElement("div");
+        row.className = "dv-chat-msg";
+        row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
+        frag.appendChild(row);
+      }
+      chat.innerHTML = "";
+      chat.appendChild(frag);
+      chat.scrollTop = chat.scrollHeight;
+    }
+
+    // -------------------------
+    // Boot: ensure signed in + join
+    // -------------------------
+    async function boot() {
+      if (!sessionId) return;
+
+      setStatus("good", "Connecting…", "Signing in and joining the session.");
+
+      const user = auth.currentUser;
+      if (!user) {
+        setStatus("warn", "Sign in required", "Return to home and sign in first.");
+        setTimeout(() => window.location.href = "./index.html", 800);
+        return;
+      }
+
+      if (!myAlias) {
+        setStatus("warn", "Alias missing", "Return to home and set an alias.");
+        setTimeout(() => window.location.href = "./index.html", 800);
+        return;
+      }
+
+      try {
+        const join = functions.httpsCallable("delveeJoinSession");
+        await join({ sessionId, alias: myAlias });
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
+        return;
+      }
+
+      setStatus("good", "Connected", "Realtime lobby active.");
+
+      unsub.push(
+        sref.onSnapshot((snap) => {
+          const d = snap.data() || {};
+          session = d;
+
+          const st = d.state || "—";
+          renderState(st);
+
+          isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
+          setHidden(hostControls, !isHost);
+
+          renderCountdown();
+        }, (err) => {
+          console.error(err);
+          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
+        })
+      );
+
+      unsub.push(
+        pref.doc(auth.currentUser.uid).onSnapshot((snap) => {
+          me = snap.data() || null;
+          const ready = !!(me && me.ready);
+          btnReady.textContent = ready ? "Unready" : "Ready";
+        })
+      );
+
+      unsub.push(
+        pref.onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderParticipants(list);
+        })
+      );
+
+      unsub.push(
+        pulsesRef.orderBy("createdAtMillis", "asc").limit(250).onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderFeed(list);
+        })
+      );
+
+      unsub.push(
+        chatRef.orderBy("createdAtMillis", "asc").limit(200).onSnapshot((snap) => {
+          const list = snap.docs.map(d => d.data());
+          renderChat(list);
+        })
+      );
+
+      setInterval(renderCountdown, 500);
+    }
+
+    auth.onAuthStateChanged(() => boot());
+
+    window.addEventListener("beforeunload", () => {
+      for (const u of unsub) try { u(); } catch (_) {}
+      unsub = [];
+    });
+  </script>
+</body>
+</html>
