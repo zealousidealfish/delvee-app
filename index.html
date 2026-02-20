@@ -114,35 +114,51 @@
   <style>
     .hidden{ display:none !important; }
 
-    /* ✅ Better spacing + equal-height panels (fixes “boxes look cramped / uneven”) */
+    /* ✅ Better spacing + centered two-card layout when authed */
     .dv-grid.dv-grid-3{
       gap: 16px !important;
       align-items: stretch;
     }
-    .dv-grid.dv-grid-3 > .dv-panel{
-      height: 100%;
-      display: flex;
-      flex-direction: column;
+    body.dv-authed .dv-grid.dv-grid-3{
+      grid-template-columns: repeat(2, minmax(0, 420px)) !important;
+      justify-content: center !important;
     }
-    /* push footer-ish content to bottom when present */
-    .dv-grid.dv-grid-3 > .dv-panel .dv-actions{
-      margin-top: auto;
+    body.dv-authed #signInPanel{
+      display: none !important;
     }
 
-    /* make panel heads align consistently */
-    .dv-panel-head{
-      margin-bottom: 12px;
+    /* Small polish */
+    .dv-panel{ min-height: 100%; }
+    .dv-actions{ gap: 10px; }
+    .dv-field input[readonly]{
+      cursor: default;
+      opacity: 0.98;
     }
 
-    /* a touch more breathing room around the grid on wide screens */
-    .dv-hero .dv-grid{
-      margin-top: 14px;
+    /* Join-code header row */
+    .dv-inline-row{
+      display:flex;
+      gap: 10px;
+      align-items:center;
+      justify-content: space-between;
+      flex-wrap: wrap;
     }
-
-    /* mobile: slightly larger gaps so it doesn’t feel stacked-tight */
-    @media (max-width: 720px){
-      .dv-grid.dv-grid-3{ gap: 14px !important; }
-      .dv-hero .dv-grid{ margin-top: 12px; }
+    .dv-mini{
+      font-size: 12px;
+      color: rgba(233,238,246,0.70);
+      line-height: 1.35;
+    }
+    .dv-chiplike{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: rgba(233,238,246,0.88);
+      font-size: 12.5px;
+      white-space: nowrap;
     }
   </style>
 </head>
@@ -160,7 +176,7 @@
       <div class="dv-top-actions">
         <button class="dv-theme-toggle" id="themeToggle" type="button">Theme</button>
         <button class="dv-chip" id="btn-resume" type="button" disabled>Resume lobby</button>
-        <!-- ✅ Hide when not signed in -->
+        <!-- Hide when not signed in -->
         <button class="dv-btn dv-btn-quiet hidden" id="btn-signout" type="button">Sign out</button>
       </div>
     </div>
@@ -187,7 +203,7 @@
           <div class="dv-panel dv-panel-strong">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Identity</h2>
-              <div class="dv-muted">locked per lobby</div>
+              <div class="dv-muted" id="identityMeta">locked per lobby</div>
             </div>
 
             <div class="dv-field">
@@ -198,22 +214,31 @@
 
             <div class="dv-divider"></div>
 
-            <div class="dv-field">
-              <label for="sessionId">Join code</label>
-              <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" />
-              <div class="dv-help">Shared out-of-band. Paste exactly.</div>
+            <div class="dv-inline-row">
+              <div>
+                <label for="sessionId" style="display:block;">Join code</label>
+                <div class="dv-mini" id="codeHint">Sign in, then enter an alias to generate a code.</div>
+              </div>
+              <span class="dv-chiplike hidden" id="codePill">Code ready</span>
+            </div>
+
+            <div class="dv-field" style="margin-top:10px;">
+              <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" readonly />
+              <div class="dv-help" id="sessionHelp">This is your lobby code to share.</div>
             </div>
 
             <div class="dv-actions">
-              <button class="dv-btn dv-btn-primary" id="btn-create" type="button" disabled>Create lobby</button>
-              <button class="dv-btn" id="btn-join" type="button" disabled>Join</button>
+              <button class="dv-btn dv-btn-primary" id="btn-open" type="button" disabled>Open lobby</button>
+              <button class="dv-btn" id="btn-copy" type="button" disabled>Copy code</button>
             </div>
 
-            <div class="dv-help dv-help-tight">Creating/joining moves you to the lobby page.</div>
+            <div class="dv-help dv-help-tight" id="createHelp">
+              Once the code is created, you can open the lobby and invite others.
+            </div>
           </div>
 
           <!-- Sign in -->
-          <div class="dv-panel">
+          <div class="dv-panel" id="signInPanel">
             <div class="dv-panel-head">
               <h2 class="dv-h2">Sign in</h2>
               <div class="dv-muted">same Firebase as Setfeed</div>
@@ -293,10 +318,15 @@
 
     const btnEmail = document.getElementById("btn-email");
     const btnGoogle = document.getElementById("btn-google");
-    const btnCreate = document.getElementById("btn-create");
-    const btnJoin = document.getElementById("btn-join");
     const btnSignout = document.getElementById("btn-signout");
     const btnResume = document.getElementById("btn-resume");
+
+    const btnOpen = document.getElementById("btn-open");
+    const btnCopy = document.getElementById("btn-copy");
+
+    const codeHint = document.getElementById("codeHint");
+    const codePill = document.getElementById("codePill");
+    const identityMeta = document.getElementById("identityMeta");
 
     // -------------------------
     // Local persistence
@@ -304,6 +334,9 @@
     const EMAIL_FOR_SIGNIN_KEY = "dv_email_for_signin";
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
+
+    // ✅ remember the generated join code for this browser (so we don't create a new one on refresh)
+    const GENERATED_SESSION_KEY = "dv_generated_session_id";
 
     try {
       const saved = localStorage.getItem(ALIAS_KEY);
@@ -317,28 +350,12 @@
       try { localStorage.setItem(LAST_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
     }
 
-    alias.addEventListener("input", () => {
-      try { localStorage.setItem(ALIAS_KEY, alias.value.trim()); } catch (_) {}
-      refreshEnabled();
-    });
-
-    function refreshEnabled() {
-      const authed = !!auth.currentUser;
-      const hasAlias = alias.value.trim().length > 0;
-      const hasSid = sessionId.value.trim().length > 0;
-
-      btnCreate.disabled = !(authed && hasAlias);
-      btnJoin.disabled = !(authed && hasAlias && hasSid);
-
-      // ✅ hide sign out unless authed
-      btnSignout.classList.toggle("hidden", !authed);
-
-      const last = getLastSession();
-      btnResume.disabled = !(authed && last);
+    function getGeneratedSession() {
+      try { return (localStorage.getItem(GENERATED_SESSION_KEY) || "").trim().toUpperCase(); } catch (_) { return ""; }
     }
-
-    sessionId.addEventListener("input", refreshEnabled);
-    email.addEventListener("input", refreshEnabled);
+    function setGeneratedSession(sid) {
+      try { localStorage.setItem(GENERATED_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
+    }
 
     // -------------------------
     // Navigation
@@ -355,15 +372,158 @@
       if (last) goLobby(last);
     });
 
+    btnOpen.addEventListener("click", () => {
+      const sid = (sessionId.value || "").trim().toUpperCase();
+      if (sid) goLobby(sid);
+    });
+
+    btnCopy.addEventListener("click", async () => {
+      const sid = (sessionId.value || "").trim().toUpperCase();
+      if (!sid) return;
+      try {
+        await navigator.clipboard.writeText(sid);
+        setStatus("good", "Copied", "Join code copied.");
+      } catch (_) {
+        setStatus("warn", "Copy failed", "Copy manually from the join code field.");
+      }
+    });
+
+    // -------------------------
+    // UI refresh
+    // -------------------------
+    let creating = false;
+
+    function setAuthedLayout(authed) {
+      document.body.classList.toggle("dv-authed", !!authed);
+      btnSignout.classList.toggle("hidden", !authed);
+    }
+
+    function setCodeReadyUI(ready) {
+      codePill.classList.toggle("hidden", !ready);
+      btnOpen.disabled = !ready;
+      btnCopy.disabled = !ready;
+      sessionId.readOnly = true;
+      if (ready) {
+        codeHint.textContent = "Share this code to invite others.";
+        identityMeta.textContent = "locked for this session";
+      } else {
+        codeHint.textContent = "Sign in, then enter an alias to generate a code.";
+        identityMeta.textContent = "locked per lobby";
+      }
+    }
+
+    function refreshEnabled() {
+      const authed = !!auth.currentUser;
+      setAuthedLayout(authed);
+
+      const hasAlias = alias.value.trim().length > 0;
+
+      const last = getLastSession();
+      btnResume.disabled = !(authed && last);
+
+      // code readiness
+      const sid = (sessionId.value || "").trim().toUpperCase();
+      setCodeReadyUI(authed && !!sid);
+
+      // status copy
+      if (!authed) {
+        setStatus("warn", "Not signed in", "Sign in to generate a join code.");
+      }
+    }
+
+    // -------------------------
+    // Auto-create join code
+    // -------------------------
+    async function maybeCreateJoinCode() {
+      const authed = !!auth.currentUser;
+      const a = alias.value.trim();
+      if (!authed) return;
+      if (!a) {
+        // no alias yet: clear generated UI (but keep stored id if it exists)
+        const existing = getGeneratedSession();
+        if (existing) {
+          sessionId.value = existing;
+          setCodeReadyUI(true);
+        } else {
+          sessionId.value = "";
+          setCodeReadyUI(false);
+        }
+        return;
+      }
+
+      // if we already have one stored, use it
+      const existing = getGeneratedSession();
+      if (existing) {
+        sessionId.value = existing;
+        setCodeReadyUI(true);
+        return;
+      }
+
+      if (creating) return;
+      creating = true;
+
+      try {
+        setStatus("good", "Creating code…", "Generating a join code for your alias.");
+        codeHint.textContent = "Generating…";
+        btnOpen.disabled = true;
+        btnCopy.disabled = true;
+
+        const create = functions.httpsCallable("delveeCreateSession");
+        const res = await create({ alias: a });
+        const sid = (res?.data?.sessionId || "").trim().toUpperCase();
+        if (!sid) throw new Error("Missing sessionId");
+
+        setGeneratedSession(sid);
+        setLastSession(sid);
+        sessionId.value = sid;
+
+        setCodeReadyUI(true);
+        setStatus("good", "Code ready", "Open the lobby when you’re ready.");
+      } catch (e) {
+        console.error(e);
+        sessionId.value = "";
+        setCodeReadyUI(false);
+        setStatus("warn", "Couldn’t create code", (e && e.message) ? e.message : "Try again.");
+      } finally {
+        creating = false;
+      }
+    }
+
+    // Persist alias
+    alias.addEventListener("input", () => {
+      try { localStorage.setItem(ALIAS_KEY, alias.value.trim()); } catch (_) {}
+      // if user changes alias before code exists, we’ll generate once alias is present
+      maybeCreateJoinCode().catch(() => {});
+      refreshEnabled();
+    });
+
     // -------------------------
     // Auth
     // -------------------------
     auth.onAuthStateChanged((user) => {
+      setAuthedLayout(!!user);
+
       if (user) {
         setStatus("good", "Signed in", user.email || "Ready");
+        // ✅ hide the whole sign-in section automatically via CSS (dv-authed)
+        // ✅ create join code once alias is entered (or restore stored code)
+        const existing = getGeneratedSession();
+        if (existing) {
+          sessionId.value = existing;
+          setCodeReadyUI(true);
+        } else {
+          sessionId.value = "";
+          setCodeReadyUI(false);
+        }
+        maybeCreateJoinCode().catch(() => {});
       } else {
-        setStatus("warn", "Not signed in", "Sign in to create or join a lobby.");
+        // On sign-out: reset code UI (but keep stored alias)
+        sessionId.value = "";
+        try { localStorage.removeItem(GENERATED_SESSION_KEY); } catch (_) {}
+        setCodeReadyUI(false);
+        setStatus("warn", "Not signed in", "Sign in to generate a join code.");
       }
+
       refreshEnabled();
     });
 
@@ -373,7 +533,7 @@
         const provider = new firebase.auth.GoogleAuthProvider();
         provider.setCustomParameters({ prompt: "select_account" });
         await auth.signInWithPopup(provider);
-        setStatus("good", "Signed in", "Choose an alias, then create or join.");
+        setStatus("good", "Signed in", "Enter an alias to generate a join code.");
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t sign in", "Google sign-in failed. Check pop-up blocking and try again.");
@@ -431,55 +591,18 @@
     btnSignout.addEventListener("click", async () => {
       try {
         await auth.signOut();
-        setStatus("warn", "Signed out", "Sign in again to create or join.");
+        setStatus("warn", "Signed out", "Sign in again to generate a join code.");
       } catch (e) {
         console.error(e);
       }
     });
 
     // -------------------------
-    // Create / Join
+    // Init
     // -------------------------
-    btnCreate.addEventListener("click", async () => {
-      const a = alias.value.trim();
-      if (!auth.currentUser) return;
-      if (!a) {
-        setStatus("warn", "Alias needed", "Choose an alias first.");
-        return;
-      }
-
-      try {
-        setStatus("good", "Creating…", "Opening a new lobby…");
-        const create = functions.httpsCallable("delveeCreateSession");
-        const res = await create({ alias: a });
-        const sid = res?.data?.sessionId;
-        if (!sid) throw new Error("Missing sessionId");
-        goLobby(sid);
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t create", (e && e.message) ? e.message : "Try again.");
-      }
-    });
-
-    btnJoin.addEventListener("click", async () => {
-      const sid = sessionId.value.trim();
-      const a = alias.value.trim();
-      if (!auth.currentUser) return;
-      if (!sid || !a) {
-        setStatus("warn", "Missing details", "Enter a session code and alias.");
-        return;
-      }
-
-      try {
-        setStatus("good", "Joining…", "Entering lobby…");
-        const join = functions.httpsCallable("delveeJoinSession");
-        await join({ sessionId: sid, alias: a });
-        goLobby(sid);
-      } catch (e) {
-        console.error(e);
-        setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
-      }
-    });
+    // On load, if there’s a stored generated code, show it (authed will enable)
+    const existing = getGeneratedSession();
+    if (existing) sessionId.value = existing;
 
     refreshEnabled();
   </script>
