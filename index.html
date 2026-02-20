@@ -110,6 +110,88 @@
       });
     })();
   </script>
+
+  <style>
+    .hidden{ display:none !important; }
+
+    /* ✅ Better spacing + centered two-card layout when authed */
+    .dv-grid.dv-grid-3{
+      gap: 16px !important;
+      align-items: stretch;
+      margin-top: 18px; /* extra breathing room vs status bar */
+    }
+    body.dv-authed .dv-grid.dv-grid-3{
+      grid-template-columns: repeat(2, minmax(0, 420px)) !important;
+      justify-content: center !important;
+    }
+
+    /* ✅ When authed: remove Sign in panel entirely */
+    body.dv-authed #signInPanel{ display:none !important; }
+
+    /* Extra safety: if you ever show an authed banner, still hide sign-in */
+    body.dv-authed #signInPanel,
+    body.dv-authed #signInPanel *{ pointer-events:none; }
+
+    /* Small polish */
+    .dv-panel{ min-height: 100%; }
+    .dv-actions{ gap: 10px; }
+    .dv-field input[readonly]{ cursor: default; opacity: 0.98; }
+
+    /* Join-code header row */
+    .dv-inline-row{
+      display:flex;
+      gap: 10px;
+      align-items:flex-start;
+      justify-content: space-between;
+      flex-wrap: wrap;
+    }
+
+    /* ✅ Fix: join-code text too big/bold */
+    .dv-section-label{
+      font-size: 12.8px;
+      line-height: 1.2;
+      font-weight: var(--dv-fw-medium);
+      color: var(--dv-soft);
+      letter-spacing: -0.02px;
+    }
+    .dv-section-sub{
+      margin-top: 4px;
+      font-size: 12.3px;
+      line-height: 1.35;
+      color: color-mix(in srgb, var(--dv-soft) 92%, transparent);
+      max-width: 34ch;
+    }
+
+    .dv-mini{
+      font-size: 12px;
+      color: rgba(203,208,216,0.70);
+      line-height: 1.35;
+    }
+    :root[data-theme="light"] .dv-mini{
+      color: rgba(73,69,79,0.72);
+    }
+
+    .dv-chiplike{
+      display:inline-flex;
+      align-items:center;
+      gap:8px;
+      padding: 8px 12px;
+      border-radius: 999px;
+      border: 1px solid rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.05);
+      color: rgba(233,238,246,0.88);
+      font-size: 12.5px;
+      white-space: nowrap;
+    }
+    :root[data-theme="light"] .dv-chiplike{
+      border-color: rgba(28,27,31,0.14);
+      background: rgba(28,27,31,0.04);
+      color: rgba(28,27,31,0.78);
+    }
+
+    /* Slightly tighter help under join code */
+    .dv-help-tight{ margin-top: 8px; }
+  </style>
 </head>
 
 <body class="dv-bg">
@@ -125,6 +207,7 @@
       <div class="dv-top-actions">
         <button class="dv-theme-toggle" id="themeToggle" type="button">Theme</button>
         <button class="dv-chip" id="btn-resume" type="button" disabled>Resume lobby</button>
+        <!-- Hide when not signed in -->
         <button class="dv-btn dv-btn-quiet hidden" id="btn-signout" type="button">Sign out</button>
       </div>
     </div>
@@ -138,7 +221,7 @@
           Anonymous live preview. Throttled submissions. A short window, then reveal.
         </p>
 
-        <div class="dv-status dv-status-center" id="status">
+        <div class="dv-status" id="status">
           <span class="dv-dot" id="statusDot"></span>
           <div>
             <div class="dv-status-title" id="statusTitle">Not signed in</div>
@@ -164,13 +247,13 @@
 
             <div class="dv-inline-row">
               <div>
-                <label for="sessionId" class="dv-label-block">Join code</label>
-                <div class="dv-mini" id="codeHint">Sign in, then enter an alias to generate a code.</div>
+                <div class="dv-section-label">Join code</div>
+                <div class="dv-section-sub" id="codeHint">Sign in, then enter an alias to generate a code.</div>
               </div>
               <span class="dv-chiplike hidden" id="codePill">Code ready</span>
             </div>
 
-            <div class="dv-field dv-field-tight">
+            <div class="dv-field" style="margin-top:10px;">
               <input id="sessionId" type="text" placeholder="DV-ABCD-EFGH" readonly />
               <div class="dv-help" id="sessionHelp">This is your lobby code to share.</div>
             </div>
@@ -282,6 +365,8 @@
     const EMAIL_FOR_SIGNIN_KEY = "dv_email_for_signin";
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
+
+    // ✅ remember the generated join code for this browser (so we don't create a new one on refresh)
     const GENERATED_SESSION_KEY = "dv_generated_session_id";
 
     try {
@@ -369,7 +454,9 @@
       const sid = (sessionId.value || "").trim().toUpperCase();
       setCodeReadyUI(authed && !!sid);
 
-      if (!authed) setStatus("warn", "Not signed in", "Sign in to generate a join code.");
+      if (!authed) {
+        setStatus("warn", "Not signed in", "Sign in to generate a join code.");
+      }
     }
 
     // -------------------------
@@ -443,6 +530,7 @@
 
       if (user) {
         setStatus("good", "Signed in", user.email || "Ready");
+
         const existing = getGeneratedSession();
         if (existing) {
           sessionId.value = existing;
@@ -537,6 +625,7 @@
     // -------------------------
     const existing = getGeneratedSession();
     if (existing) sessionId.value = existing;
+
     refreshEnabled();
   </script>
 </body>
