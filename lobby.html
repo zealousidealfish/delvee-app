@@ -200,6 +200,56 @@
       line-height: 1;
     }
     .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
+
+    /* ✅ Slightly more space between duration dropdown and Start button */
+    .dv-host{ display:flex; align-items:center; gap: 12px; }
+
+    /* ✅ “Close lobby” button emphasis */
+    .dv-btn-danger{
+      border-color: rgba(255,255,255,0.16);
+      background: rgba(255,60,60,0.16);
+    }
+    .dv-btn-danger:hover{ background: rgba(255,60,60,0.22); }
+
+    /* ✅ Attribution modal */
+    .dv-modal-backdrop{
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.55);
+      z-index: 60;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 18px;
+    }
+    .dv-modal-backdrop.show{ display:flex; }
+    .dv-modal{
+      width: min(520px, 100%);
+      border-radius: 18px;
+      border: 1px solid rgba(255,255,255,0.14);
+      background: rgba(15,17,20,0.92);
+      box-shadow: 0 24px 70px rgba(0,0,0,0.55);
+      padding: 14px;
+    }
+    .dv-modal h3{
+      margin: 0 0 8px 0;
+      font-size: 14px;
+      font-weight: 520;
+      color: rgba(233,238,246,0.92);
+    }
+    .dv-modal .dv-muted2{ margin-top: 6px; }
+    .dv-modal-list{
+      margin-top: 10px;
+      display:flex;
+      flex-wrap:wrap;
+      gap: 8px;
+    }
+    .dv-modal-actions{
+      display:flex;
+      gap:10px;
+      justify-content:flex-end;
+      margin-top: 12px;
+    }
   </style>
 </head>
 
@@ -256,7 +306,11 @@
                   <option value="4">4 min</option>
                   <option value="5">5 min</option>
                 </select>
+
                 <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
+
+                <!-- ✅ Stop button during RUNNING (requires server callable delveeStopSession) -->
+                <button class="dv-btn hidden" id="btn-stop" type="button">Stop</button>
               </div>
             </div>
 
@@ -264,15 +318,32 @@
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- Setfeed summary delivery -->
+            <!-- ✅ Account-based Setfeed delivery (preferred) + fallback to manual code -->
             <div class="dv-summary" id="setfeedPanel">
               <h3>Setfeed summary delivery</h3>
-              <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
+
+              <div id="setfeedAccountBox" class="dv-muted2" style="margin-bottom:10px;">
+                Sign in with Google to send summaries to your account inbox automatically (web + app).
+              </div>
+
+              <div id="setfeedCodeBox">
+                <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
+              </div>
+
               <div class="dv-minirow">
                 <button class="dv-btn" id="btn-toggle-autosend" type="button">Auto-send: Off</button>
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
               </div>
-              <div class="dv-muted2" id="setfeedStatus">Tip: each participant uses their own receive code (summary encrypts locally).</div>
+
+              <div class="dv-muted2" id="setfeedStatus">Tip: summary encrypts locally and sends to your inbox.</div>
+
+              <!-- ✅ Close lobby (appears 2 minutes after summary generated) -->
+              <div class="dv-minirow">
+                <button class="dv-btn dv-btn-danger hidden" id="btn-close-lobby" type="button">Close lobby</button>
+              </div>
+              <div class="dv-muted2 hidden" id="closeLobbyHint">
+                This destroys the lobby session in Firestore. (Requires server callable: <code>delveeCloseLobby</code>)
+              </div>
             </div>
           </div>
         </aside>
@@ -313,10 +384,19 @@
             <div class="dv-summary hidden" id="summaryPanel">
               <h3>Session summary</h3>
               <pre id="summaryText">—</pre>
+
+              <!-- ✅ Rich summary: aliases + messages (client-built) -->
+              <div class="dv-muted2" id="summaryScore" style="margin-top:10px;"></div>
+              <div class="dv-muted2" id="summaryMeta" style="margin-top:6px;">Generated on DONE.</div>
+
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
               </div>
-              <div class="dv-muted2" id="summaryMeta">Generated on DONE.</div>
+
+              <div class="dv-summary" id="summaryByAliasBox" style="margin-top:12px;">
+                <h3 style="margin-bottom:8px;">Messages by participant</h3>
+                <pre id="summaryByAlias">—</pre>
+              </div>
             </div>
 
           </div>
@@ -347,6 +427,22 @@
     </section>
   </main>
 
+  <!-- ✅ Attribution modal -->
+  <div class="dv-modal-backdrop" id="guessBackdrop" role="dialog" aria-modal="true" aria-label="Choose sender">
+    <div class="dv-modal">
+      <h3>Who do you think sent this?</h3>
+      <div class="dv-muted2" id="guessPreview">—</div>
+      <div class="dv-modal-list" id="guessList"></div>
+      <div class="dv-modal-actions">
+        <button class="dv-btn" id="guessClear" type="button">Clear</button>
+        <button class="dv-btn dv-btn-primary" id="guessClose" type="button">Done</button>
+      </div>
+      <div class="dv-muted2" style="margin-top:10px;">
+        Your guesses are scored in the summary as “correct predictions”.
+      </div>
+    </div>
+  </div>
+
   <script>
     // -------------------------
     // Utilities
@@ -361,6 +457,9 @@
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
 
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
+
+    // ✅ Predictions storage (per session)
+    const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
 
     function getAlias() {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
@@ -407,6 +506,24 @@
       el.classList.toggle("hidden", !!hidden);
     }
 
+    function isGoogleUser(u){
+      if (!u) return false;
+      const prov = (u.providerData || []).map(p => p && p.providerId).filter(Boolean);
+      // google sign-in users will usually include google.com
+      return prov.includes("google.com");
+    }
+
+    function isAnon(u){
+      return !!(u && u.isAnonymous);
+    }
+
+    function loadPredictions(){
+      try { return JSON.parse(localStorage.getItem(PRED_KEY) || "{}") || {}; } catch (_) { return {}; }
+    }
+    function savePredictions(obj){
+      try { localStorage.setItem(PRED_KEY, JSON.stringify(obj || {})); } catch (_) {}
+    }
+
     if (!sessionId) {
       setStatus("warn", "Missing session", "Open a lobby from Delvee home or a join link.");
       setTimeout(() => window.location.href = "./index.html", 700);
@@ -430,6 +547,7 @@
     const btnReady = document.getElementById("btn-ready");
     const hostControls = document.getElementById("hostControls");
     const btnStart = document.getElementById("btn-start");
+    const btnStop = document.getElementById("btn-stop");
     const durationSel = document.getElementById("duration");
 
     const countdownEl = document.getElementById("countdown");
@@ -455,12 +573,27 @@
     const summaryPanel = document.getElementById("summaryPanel");
     const summaryTextEl = document.getElementById("summaryText");
     const summaryMeta = document.getElementById("summaryMeta");
+    const summaryScore = document.getElementById("summaryScore");
+    const summaryByAliasEl = document.getElementById("summaryByAlias");
+
     const btnSendSummary = document.getElementById("btn-send-summary");
     const btnSendSummary2 = document.getElementById("btn-send-summary-2");
 
+    const setfeedAccountBox = document.getElementById("setfeedAccountBox");
+    const setfeedCodeBox = document.getElementById("setfeedCodeBox");
     const setfeedCodeInput = document.getElementById("setfeedCode");
     const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
     const setfeedStatus = document.getElementById("setfeedStatus");
+
+    const btnCloseLobby = document.getElementById("btn-close-lobby");
+    const closeLobbyHint = document.getElementById("closeLobbyHint");
+
+    // Guess modal
+    const guessBackdrop = document.getElementById("guessBackdrop");
+    const guessPreview = document.getElementById("guessPreview");
+    const guessList = document.getElementById("guessList");
+    const guessClose = document.getElementById("guessClose");
+    const guessClear = document.getElementById("guessClear");
 
     // -------------------------
     // Firestore refs
@@ -483,6 +616,19 @@
     let pendingImagePulse = null;
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
+
+    // ✅ Cache participants for alias lookup + scoring
+    let participantsCache = []; // [{uid, alias, aliasLower, ...}]
+    let aliasByUid = new Map();
+
+    // ✅ Cache pulses for rich summary + scoring
+    let pulsesCache = []; // latest-first
+
+    // ✅ Close-lobby timer
+    let closeLobbyTimer = null;
+
+    // ✅ Guess modal state
+    let currentGuessPulseId = null;
 
     // -------------------------
     // Chip file picker wiring
@@ -524,7 +670,7 @@
     }
 
     // -------------------------
-    // Setfeed helpers (unchanged)
+    // Setfeed helpers (manual-code fallback)
     // -------------------------
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
@@ -598,45 +744,92 @@
       const auto = getAutosend();
       btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
 
+      const u = auth.currentUser;
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
+
+      // Prefer account-based flow if signed in (non-anon google)
+      setHidden(setfeedAccountBox, !canAccountSend);
+      setHidden(setfeedCodeBox, canAccountSend);
+
       const code = (setfeedCodeInput.value || "").trim();
-      const canSend = !!code && !!session && state === "DONE" && !!(session.summaryText);
+      const hasSummary = !!(session && session.summaryText);
+      const canSend =
+        (state === "DONE" && hasSummary) &&
+        (canAccountSend || !!code);
+
       btnSendSummary.disabled = !canSend;
       btnSendSummary2.disabled = !canSend;
 
       if (hasSentForThisSession()) {
-        setfeedStatus.textContent = "Summary sent to your Setfeed inbox for this session.";
-      } else if (!code) {
-        setfeedStatus.textContent = "Paste your Setfeed receive code. Summary encrypts locally and sends to your inbox.";
-      } else if (state !== "DONE") {
-        setfeedStatus.textContent = "Summary sends when the session is DONE (or you can send once it appears).";
-      } else if (session && session.summaryText) {
-        setfeedStatus.textContent = auto ? "Auto-send is ON: will send once per session." : "Ready to send.";
-      } else {
+        setfeedStatus.textContent = "Summary sent for this session.";
+        return;
+      }
+
+      if (state !== "DONE") {
+        setfeedStatus.textContent = "Summary sends when the session is DONE.";
+        return;
+      }
+
+      if (!hasSummary) {
         setfeedStatus.textContent = "Waiting for summary generation…";
+        return;
+      }
+
+      if (canAccountSend) {
+        setfeedStatus.textContent =
+          auto
+            ? "Auto-send is ON: will send once per session (account inbox)."
+            : "Ready to send (account inbox).";
+      } else {
+        setfeedStatus.textContent =
+          code
+            ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
+            : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
       }
     }
 
     async function sendSummaryToSetfeed() {
       if (!auth.currentUser) return;
 
-      const codeRaw = (setfeedCodeInput.value || "").trim();
-      if (!codeRaw) {
-        setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
-        return;
-      }
+      // ✅ If signed-in Google (non-anon), try account-based send first
+      const u = auth.currentUser;
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
+
       if (!session || !session.summaryText) {
         setStatus("warn", "No summary", "Summary not ready yet.");
         return;
       }
       if (hasSentForThisSession()) {
-        setStatus("good", "Already sent", "This session’s summary has already been sent from this device.");
+        setStatus("good", "Already sent", "This session’s summary has already been sent.");
         refreshSetfeedUI();
         return;
       }
 
+      btnSendSummary.disabled = true;
+      btnSendSummary2.disabled = true;
+
       try {
-        btnSendSummary.disabled = true;
-        btnSendSummary2.disabled = true;
+        if (canAccountSend) {
+          // Requires a backend callable you likely don't have yet:
+          //   delveeSendSummaryToSetfeed({ sessionId })
+          // which should read the user's saved prefs / receive codes server-side.
+          setfeedStatus.textContent = "Sending to account inbox…";
+          const call = functions.httpsCallable("delveeSendSummaryToSetfeed");
+          await call({ sessionId });
+
+          markSentForThisSession();
+          setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
+          setStatus("good", "Sent", "Summary delivered to your account inbox.");
+          return;
+        }
+
+        // Fallback: manual receive code encryption (guest)
+        const codeRaw = (setfeedCodeInput.value || "").trim();
+        if (!codeRaw) {
+          setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
+          return;
+        }
+
         setfeedStatus.textContent = "Encrypting + sending…";
 
         const normalized = normalizeCodeAndroid(codeRaw);
@@ -663,8 +856,12 @@
         setStatus("good", "Sent", "Summary delivered to your Setfeed Inbox.");
       } catch (e) {
         console.error(e);
-        setfeedStatus.textContent = "Couldn’t send. Check the code is valid and try again.";
-        setStatus("warn", "Send failed", (e && e.message) ? e.message : "Try again.");
+        const msg = (e && e.message) ? e.message : "Try again.";
+        setfeedStatus.textContent =
+          canAccountSend
+            ? "Couldn’t send to account inbox. (You may need to deploy delveeSendSummaryToSetfeed.)"
+            : "Couldn’t send. Check the code is valid and try again.";
+        setStatus("warn", "Send failed", msg);
       } finally {
         refreshSetfeedUI();
       }
@@ -721,6 +918,22 @@
         setStatus("warn", "Couldn’t start", (e && e.message) ? e.message : "Try again.");
       } finally {
         btnStart.disabled = false;
+      }
+    });
+
+    // ✅ Stop RUNNING early -> COOLDOWN (requires backend callable delveeStopSession)
+    btnStop.addEventListener("click", async () => {
+      if (!isHost) return;
+      if (state !== "RUNNING") return;
+      try {
+        btnStop.disabled = true;
+        const call = functions.httpsCallable("delveeStopSession");
+        await call({ sessionId });
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Couldn’t stop", (e && e.message) ? e.message : "Deploy delveeStopSession and try again.");
+      } finally {
+        btnStop.disabled = false;
       }
     });
 
@@ -838,6 +1051,20 @@
       }
     });
 
+    // ✅ Enter to send (Pulse + Chat)
+    pulseText.addEventListener("keydown", (e) => {
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        btnPulse.click();
+      }
+    });
+    chatText.addEventListener("keydown", (e) => {
+      if (e.key === "Enter") {
+        e.preventDefault();
+        btnChat.click();
+      }
+    });
+
     // Setfeed controls
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
@@ -848,10 +1075,83 @@
     btnToggleAutosend.addEventListener("click", () => {
       setAutosend(!getAutosend());
       refreshSetfeedUI();
+      // if summary already ready, attempt autosend immediately
+      maybeAutoSend().catch(() => {});
     });
 
     btnSendSummary.addEventListener("click", sendSummaryToSetfeed);
     btnSendSummary2.addEventListener("click", sendSummaryToSetfeed);
+
+    // Close lobby (requires backend callable)
+    btnCloseLobby.addEventListener("click", async () => {
+      if (!auth.currentUser) return;
+      try {
+        btnCloseLobby.disabled = true;
+        const call = functions.httpsCallable("delveeCloseLobby");
+        await call({ sessionId });
+        setStatus("good", "Closed", "Lobby destroyed.");
+        setTimeout(() => window.location.href = "./index.html", 600);
+      } catch (e) {
+        console.error(e);
+        setStatus("warn", "Close failed", (e && e.message) ? e.message : "Deploy delveeCloseLobby and try again.");
+      } finally {
+        btnCloseLobby.disabled = false;
+      }
+    });
+
+    // -------------------------
+    // Guess modal
+    // -------------------------
+    function modalShowGuess(pulseId, previewText){
+      currentGuessPulseId = pulseId;
+      guessPreview.textContent = previewText || "—";
+
+      const preds = loadPredictions();
+      const existing = preds[pulseId] || null;
+
+      guessList.innerHTML = "";
+      const frag = document.createDocumentFragment();
+
+      const sorted = [...participantsCache].sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
+      for (const p of sorted) {
+        const b = document.createElement("button");
+        b.type = "button";
+        b.className = "dv-btn";
+        b.textContent = p.alias || "—";
+        if (existing && existing.guessedUid === p.uid) {
+          b.classList.add("dv-btn-primary");
+        }
+        b.addEventListener("click", () => {
+          const next = loadPredictions();
+          next[pulseId] = { guessedUid: p.uid, guessedAlias: p.alias || null };
+          savePredictions(next);
+          modalHideGuess();
+          // rerender summary score if visible
+          renderSummaryIfReady();
+        });
+        frag.appendChild(b);
+      }
+
+      guessList.appendChild(frag);
+      guessBackdrop.classList.add("show");
+    }
+    function modalHideGuess(){
+      guessBackdrop.classList.remove("show");
+      currentGuessPulseId = null;
+    }
+
+    guessClose.addEventListener("click", modalHideGuess);
+    guessBackdrop.addEventListener("click", (e) => {
+      if (e.target === guessBackdrop) modalHideGuess();
+    });
+    guessClear.addEventListener("click", () => {
+      if (!currentGuessPulseId) return;
+      const preds = loadPredictions();
+      delete preds[currentGuessPulseId];
+      savePredictions(preds);
+      modalHideGuess();
+      renderSummaryIfReady();
+    });
 
     // -------------------------
     // Realtime rendering
@@ -880,6 +1180,9 @@
       chatText.disabled = !chatOpen;
       btnChat.disabled = !chatOpen;
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
+
+      // ✅ Stop button: host + RUNNING only
+      setHidden(btnStop, !(isHost && state === "RUNNING"));
 
       refreshSetfeedUI();
     }
@@ -915,13 +1218,22 @@
       return url || null;
     }
 
+    function rebuildAliasMap(list){
+      aliasByUid = new Map();
+      for (const p of list) {
+        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
+      }
+    }
+
     function renderParticipants(list) {
-      list.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
+      participantsCache = Array.isArray(list) ? list : [];
+      participantsCache.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
+      rebuildAliasMap(participantsCache);
 
       const meUid = auth.currentUser?.uid || "";
       const frag = document.createDocumentFragment();
 
-      for (const p of list) {
+      for (const p of participantsCache) {
         const row = document.createElement("div");
         row.className = "dv-person";
 
@@ -957,15 +1269,31 @@
 
       participantsEl.innerHTML = "";
       participantsEl.appendChild(frag);
+
+      // summary scoring may improve once aliases load
+      renderSummaryIfReady();
+    }
+
+    function summarizePulsePreview(it){
+      if (!it) return "—";
+      if (it.kind === "image") return "image pulse";
+      const t = String(it.text || "").trim();
+      return t.length > 140 ? (t.slice(0, 139) + "…") : (t || "[empty]");
     }
 
     async function renderFeed(items) {
-      feedMeta.textContent = `${items.length} pulses`;
+      pulsesCache = Array.isArray(items) ? items : [];
+      feedMeta.textContent = `${pulsesCache.length} pulses`;
+
+      // ✅ Latest at top: query is DESC, render in that order (no scroll-to-bottom)
       const frag = document.createDocumentFragment();
 
-      for (const it of items) {
+      for (const it of pulsesCache) {
         const card = document.createElement("div");
         card.className = "dv-pulse";
+        card.tabIndex = 0;
+        card.setAttribute("role", "button");
+        card.setAttribute("aria-label", "Guess sender");
 
         const kind = document.createElement("div");
         kind.className = "dv-pulse-kind";
@@ -993,44 +1321,161 @@
             .catch(() => {});
         }
 
+        // ✅ Click pulse to choose who you think sent it
+        const pulseId = it.clientPulseId ? `${it.senderUid || "?"}_${it.clientPulseId}` : (it.id || it.createdAtMillis || randomId("pulse"));
+        card.addEventListener("click", () => modalShowGuess(pulseId, summarizePulsePreview(it)));
+        card.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            modalShowGuess(pulseId, summarizePulsePreview(it));
+          }
+        });
+
         frag.appendChild(card);
       }
 
       feed.innerHTML = "";
       feed.appendChild(frag);
-      feed.scrollTop = feed.scrollHeight;
     }
 
     function renderChat(items) {
+      const list = Array.isArray(items) ? items : [];
+      // ✅ Latest at top: query is DESC, render in that order
       const frag = document.createDocumentFragment();
-      for (const m of items) {
+
+      for (const m of list) {
         const row = document.createElement("div");
         row.className = "dv-chat-msg";
-        row.innerHTML = `<div class="dv-chat-text">${escapeHtml(m.text || "")}</div>`;
+
+        const alias = aliasByUid.get(m.senderUid) || "—";
+        row.innerHTML = `
+          <div class="dv-chat-text">
+            <div style="font-size:12px; opacity:0.75; margin-bottom:4px;">${escapeHtml(alias)}</div>
+            ${escapeHtml(m.text || "")}
+          </div>
+        `;
         frag.appendChild(row);
       }
+
       chat.innerHTML = "";
       chat.appendChild(frag);
-      chat.scrollTop = chat.scrollHeight;
+    }
+
+    function computePredictionScore(){
+      const preds = loadPredictions();
+      const entries = Object.entries(preds || {});
+      if (!entries.length) return { guessed: 0, correct: 0 };
+
+      // We need senderUid per pulse; we have it in pulsesCache items.
+      // Build map from derivedPulseId -> senderUid
+      const map = new Map();
+      for (const it of pulsesCache) {
+        const pid = it.clientPulseId ? `${it.senderUid || "?"}_${it.clientPulseId}` : null;
+        if (pid) map.set(pid, it.senderUid || null);
+      }
+
+      let guessed = 0;
+      let correct = 0;
+
+      for (const [pulseId, guess] of entries) {
+        if (!guess || !guess.guessedUid) continue;
+        guessed++;
+        const actual = map.get(pulseId);
+        if (actual && actual === guess.guessedUid) correct++;
+      }
+
+      return { guessed, correct };
+    }
+
+    function buildSummaryByAlias(){
+      // Group pulses by senderUid (for DONE)
+      const groups = new Map(); // uid -> lines[]
+      for (const it of (pulsesCache || [])) {
+        const uid = it.senderUid || "unknown";
+        const alias = aliasByUid.get(uid) || "—";
+        const key = `${alias} (${uid.slice(0,6)}…)`;
+
+        if (!groups.has(key)) groups.set(key, []);
+        if (it.kind === "image") groups.get(key).push("• [image]");
+        else groups.get(key).push(`• ${String(it.text || "").trim() || "[empty]"}`);
+      }
+
+      const keys = Array.from(groups.keys()).sort((a,b) => a.localeCompare(b));
+      const out = [];
+      for (const k of keys) {
+        out.push(k);
+        out.push(...groups.get(k));
+        out.push("");
+      }
+      return out.length ? out.join("\n").trim() : "(no pulses)";
+    }
+
+    function scheduleCloseLobbyButton(){
+      // Show “Close lobby” 2 minutes after summary was generated (DONE + summaryReadyAtUtc)
+      try { if (closeLobbyTimer) clearTimeout(closeLobbyTimer); } catch (_) {}
+      closeLobbyTimer = null;
+
+      setHidden(btnCloseLobby, true);
+      setHidden(closeLobbyHint, true);
+
+      if (!session) return;
+      if (state !== "DONE") return;
+
+      const genStr = session.summaryReadyAtUtc || (session.summaryStats && session.summaryStats.generatedAtUtc) || null;
+      if (!genStr) return;
+
+      const genMs = Date.parse(genStr);
+      if (!Number.isFinite(genMs)) return;
+
+      const showAt = genMs + 2 * 60_000;
+      const now = Date.now();
+      const delay = Math.max(0, showAt - now);
+
+      closeLobbyTimer = setTimeout(() => {
+        // Only host should see it (safer)
+        setHidden(btnCloseLobby, !isHost);
+        setHidden(closeLobbyHint, !isHost);
+      }, delay);
     }
 
     function renderSummaryIfReady() {
       const has = !!(session && session.summaryText);
       setHidden(summaryPanel, !(state === "DONE" && has));
+
       if (state === "DONE" && has) {
         summaryTextEl.textContent = session.summaryText || "";
-        const gen = session.summaryStats && session.summaryStats.generatedAtUtc ? session.summaryStats.generatedAtUtc : (session.summaryReadyAtUtc || "—");
+
+        const gen = (session.summaryStats && session.summaryStats.generatedAtUtc)
+          ? session.summaryStats.generatedAtUtc
+          : (session.summaryReadyAtUtc || "—");
         summaryMeta.textContent = `Generated: ${gen}`;
+
+        const score = computePredictionScore();
+        summaryScore.textContent =
+          score.guessed > 0
+            ? `Correct predictions: ${score.correct} / ${score.guessed}`
+            : "Correct predictions: — (click pulses to make guesses)";
+
+        // ✅ Rich by-alias listing
+        summaryByAliasEl.textContent = buildSummaryByAlias();
       }
+
+      scheduleCloseLobbyButton();
       refreshSetfeedUI();
     }
 
     async function maybeAutoSend() {
       if (!getAutosend()) return;
       if (hasSentForThisSession()) return;
+
+      const u = auth.currentUser;
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
       const code = (setfeedCodeInput.value || "").trim();
-      if (!code) return;
+
       if (!(state === "DONE" && session && session.summaryText)) return;
+
+      if (!canAccountSend && !code) return;
+
       await sendSummaryToSetfeed();
     }
 
@@ -1053,7 +1498,6 @@
       try {
         await auth.signInAnonymously();
       } catch (e) {
-        // If anonymous not enabled, we cannot proceed without auth
         throw new Error("Guest join is unavailable. Enable Anonymous Auth in Firebase or sign in on the home page.");
       }
     }
@@ -1061,7 +1505,11 @@
     // -------------------------
     // Boot: join + subscribe
     // -------------------------
+    let booted = false;
     async function boot() {
+      if (booted) return;
+      booted = true;
+
       if (!sessionId) return;
 
       try {
@@ -1086,6 +1534,7 @@
       }
 
       setStatus("good", "Connected", "Realtime lobby active.");
+      refreshSetfeedUI();
 
       unsub.push(
         sref.onSnapshot((snap) => {
@@ -1093,11 +1542,11 @@
           session = d;
 
           const st = d.state || "—";
-          renderState(st);
 
           isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
           setHidden(hostControls, !isHost);
 
+          renderState(st);
           renderCountdown();
           renderSummaryIfReady();
 
@@ -1123,22 +1572,24 @@
         })
       );
 
+      // ✅ Latest-first feed
       unsub.push(
-        pulsesRef.orderBy("createdAtMillis", "asc").limit(250).onSnapshot((snap) => {
+        pulsesRef.orderBy("createdAtMillis", "desc").limit(250).onSnapshot((snap) => {
           const list = snap.docs.map(d => d.data());
           renderFeed(list);
+          renderSummaryIfReady(); // keeps score fresh
         })
       );
 
+      // ✅ Latest-first chat
       unsub.push(
-        chatRef.orderBy("createdAtMillis", "asc").limit(200).onSnapshot((snap) => {
+        chatRef.orderBy("createdAtMillis", "desc").limit(200).onSnapshot((snap) => {
           const list = snap.docs.map(d => d.data());
           renderChat(list);
         })
       );
 
       setInterval(renderCountdown, 500);
-      refreshSetfeedUI();
     }
 
     // Run boot when auth state is ready (anonymous sign-in triggers this)
