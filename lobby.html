@@ -250,6 +250,36 @@
       justify-content:flex-end;
       margin-top: 12px;
     }
+
+    /* ✅ Cooldown chat: tighter + consistent alias/body formatting */
+    .dv-chat-msg{
+      padding: 8px 10px !important;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.10);
+      background: rgba(255,255,255,0.05);
+      margin: 8px 0 !important;
+    }
+    .dv-chat-text{
+      display:flex;
+      flex-direction:column;
+      gap: 4px;
+      line-height: 1.25;
+    }
+    .dv-chat-alias{
+      font-size: 11.5px;
+      opacity: 0.72;
+      letter-spacing: 0.1px;
+      margin: 0;
+      padding: 0;
+    }
+    .dv-chat-body{
+      font-size: 13px;
+      opacity: 0.95;
+      margin: 0;
+      padding: 0;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   </style>
 </head>
 
@@ -461,14 +491,6 @@
     // ✅ Predictions storage (per session)
     const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
 
-    function withTimeout(promise, ms, label) {
-      let t;
-      const timeout = new Promise((_, reject) => {
-        t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-      });
-      return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
-    }
-
     function getAlias() {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
     }
@@ -625,11 +647,11 @@
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
     // ✅ Cache participants for alias lookup + scoring
-    let participantsCache = [];
+    let participantsCache = []; // [{uid, alias, aliasLower, ...}]
     let aliasByUid = new Map();
 
     // ✅ Cache pulses for rich summary + scoring
-    let pulsesCache = [];
+    let pulsesCache = []; // latest-first
 
     // ✅ Close-lobby timer
     let closeLobbyTimer = null;
@@ -652,7 +674,7 @@
       chipLabel.innerHTML = "";
       const name = document.createElement("span");
       name.className = "dv-file-name";
-      name.textContent = f.name;
+      name.textContent = f.name || "pasted-image.png";
 
       const clear = document.createElement("button");
       clear.className = "dv-file-clear";
@@ -664,6 +686,7 @@
         e.stopPropagation();
         pulseImage.value = "";
         renderChosenFileName();
+        composerHelp.textContent = "Image cleared.";
       });
 
       chipLabel.appendChild(name);
@@ -672,9 +695,43 @@
 
     if (btnChooseImage && pulseImage) {
       btnChooseImage.addEventListener("click", () => pulseImage.click());
-      pulseImage.addEventListener("change", renderChosenFileName);
+      pulseImage.addEventListener("change", () => {
+        renderChosenFileName();
+        if (pulseImage.files && pulseImage.files[0]) composerHelp.textContent = "Image ready. Click “Pulse image”.";
+      });
       renderChosenFileName();
     }
+
+    // ✅ Paste image with Ctrl+V into the pulse text box (RUNNING only)
+    async function handlePasteImage(e) {
+      try {
+        if (!e || !e.clipboardData) return;
+
+        // Only meaningful during RUNNING (otherwise users accidentally paste)
+        if (state !== "RUNNING") return;
+
+        const items = Array.from(e.clipboardData.items || []);
+        const imgItem = items.find(it => it && it.kind === "file" && String(it.type || "").startsWith("image/"));
+        if (!imgItem) return;
+
+        const file = imgItem.getAsFile();
+        if (!file) return;
+
+        e.preventDefault();
+
+        // Put the file into the hidden file input via DataTransfer
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        pulseImage.files = dt.files;
+
+        renderChosenFileName();
+        composerHelp.textContent = "Pasted image ready. Click “Pulse image”.";
+      } catch (_) {
+        // no-op
+      }
+    }
+
+    pulseText.addEventListener("paste", handlePasteImage);
 
     // -------------------------
     // Setfeed helpers (manual-code fallback)
@@ -714,6 +771,22 @@
 
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
+
+      return {
+        ciphertextB64: bytesToB64(new Uint8Array(ct)),
+        ivB64: bytesToB64(iv),
+        saltB64: bytesToB64(salt),
+      };
+    }
+
+    // ✅ Encrypt raw bytes (for image attachments)
+    async function encryptBytesForCode(rawCode, bytesArrayBuffer) {
+      const passphrase = normalizeCodeAndroid(rawCode);
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
+
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytesArrayBuffer);
 
       return {
         ciphertextB64: bytesToB64(new Uint8Array(ct)),
@@ -795,6 +868,98 @@
       }
     }
 
+    // ✅ Build encrypted image attachments from pulses (manual-code flow)
+    async function buildEncryptedImageAttachmentsForSetfeed(rawCode) {
+      const imgs = (pulsesCache || []).filter(p => p && p.kind === "image" && p.attachment && p.attachment.storagePath);
+      const out = [];
+      let n = 0;
+
+      for (const p of imgs) {
+        n++;
+        const storagePath = p.attachment.storagePath;
+        const contentType = p.attachment.contentType || "image/*";
+
+        const url = await getDownloadUrl(storagePath);
+        if (!url) continue;
+
+        const res = await fetch(url);
+        if (!res.ok) continue;
+
+        const buf = await res.arrayBuffer();
+        const enc = await encryptBytesForCode(rawCode, buf);
+
+        const attachmentId = `dv_img_${n}`;
+
+        out.push({
+          id: attachmentId,
+          kind: "image",
+          contentType,
+          sizeBytes: buf.byteLength,
+          ciphertext: enc.ciphertextB64,
+          iv: enc.ivB64,
+          salt: enc.saltB64,
+        });
+      }
+
+      return out;
+    }
+
+    // ✅ Build a sendable summary that references image attachments (so inbox can render them)
+    function buildClientSummaryWithAttachmentRefs(attachments) {
+      const sid = sessionId || "—";
+      const participants = (participantsCache || []).length;
+      const total = (pulsesCache || []).length;
+
+      const started = session?.startedAtUtc || session?.startedAtISO || session?.startedAt || null;
+      const ended = session?.endedAtUtc || session?.endedAtISO || session?.endedAt || null;
+
+      let textCount = 0;
+      let imageCount = 0;
+      for (const p of (pulsesCache || [])) {
+        if (p.kind === "image") imageCount++;
+        else if (p.kind === "text") textCount++;
+      }
+
+      const lines = [];
+      lines.push("Delvee Summary");
+      lines.push("");
+      lines.push(`Delvee — pulse summary`);
+      lines.push(`Session ${sid}`);
+      lines.push(`Participants: ${participants}`);
+      lines.push(`Pulses: ${total} (text ${textCount} · images ${imageCount})`);
+      if (session?.durationMinutes) lines.push(`Duration: ${session.durationMinutes} min`);
+      if (started) lines.push(`Started: ${started}`);
+      if (ended) lines.push(`Ended: ${ended}`);
+      lines.push("");
+      lines.push("Timeline (anonymous):");
+
+      let imgIndex = 0;
+      for (const p of (pulsesCache || [])) {
+        if (p.kind === "text") {
+          lines.push(`• ${String(p.text || "").trim() || "[empty]"}`);
+        } else if (p.kind === "image") {
+          imgIndex++;
+          const attId = attachments?.[imgIndex - 1]?.id || `dv_img_${imgIndex}`;
+          lines.push(`• [image:${attId}]`);
+        } else {
+          lines.push("• [unknown]");
+        }
+      }
+
+      if (attachments && attachments.length) {
+        lines.push("");
+        lines.push("Attachments:");
+        for (const a of attachments) {
+          lines.push(`- ${a.id} (${a.contentType}, ${a.sizeBytes} bytes)`);
+        }
+      }
+
+      lines.push("");
+      lines.push("Decryption is local in your browser.");
+
+      return lines.join("\n");
+    }
+
     async function sendSummaryToSetfeed() {
       if (!auth.currentUser) return;
 
@@ -816,15 +981,20 @@
 
       try {
         if (canAccountSend) {
+          // Backend callable expected:
+          //   delveeSendSummaryToSetfeed({ sessionId })
+          // It should fetch receive codes for the user and send direct.
           setfeedStatus.textContent = "Sending to account inbox…";
           const call = functions.httpsCallable("delveeSendSummaryToSetfeed");
-          await withTimeout(call({ sessionId }), 12000, "Account send");
+          await call({ sessionId });
+
           markSentForThisSession();
           setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
           setStatus("good", "Sent", "Summary delivered to your account inbox.");
           return;
         }
 
+        // ✅ Manual receive code encryption + attachments (guest / fallback)
         const codeRaw = (setfeedCodeInput.value || "").trim();
         if (!codeRaw) {
           setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
@@ -836,12 +1006,19 @@
         const normalized = normalizeCodeAndroid(codeRaw);
         const codeHash = await sha256Hex(normalized);
 
-        const enc = await encryptForCode(codeRaw, session.summaryText);
+        // ✅ Build encrypted image attachments from the pulses
+        const attachments = await buildEncryptedImageAttachmentsForSetfeed(codeRaw);
+
+        // ✅ Build a client summary referencing those attachments (so images render)
+        const sendableSummaryText = buildClientSummaryWithAttachmentRefs(attachments);
+
+        // ✅ Encrypt the client summary
+        const enc = await encryptForCode(codeRaw, sendableSummaryText);
 
         const deliverAtLocalIso = new Date().toISOString();
         const call = functions.httpsCallable("sendSignedCiphertext");
 
-        await withTimeout(call({
+        await call({
           codeHash,
           ciphertext: enc.ciphertextB64,
           iv: enc.ivB64,
@@ -849,8 +1026,8 @@
           deliverAtLocalIso,
           userTimezone: tzName(),
           clientRequestId: randomId("sum"),
-          attachments: [],
-        }), 12000, "Send summary");
+          attachments, // ✅ not empty anymore
+        });
 
         markSentForThisSession();
         setfeedStatus.textContent = "Sent — check your Setfeed Inbox.";
@@ -887,7 +1064,7 @@
     btnLeave.addEventListener("click", async () => {
       try {
         const leave = functions.httpsCallable("delveeLeaveSession");
-        await withTimeout(leave({ sessionId }), 8000, "Leave session");
+        await leave({ sessionId });
       } catch (_) {}
       window.location.href = "./index.html";
     });
@@ -899,7 +1076,7 @@
       try {
         btnReady.disabled = true;
         const call = functions.httpsCallable("delveeSetReady");
-        await withTimeout(call({ sessionId, ready: next }), 10000, "Set ready");
+        await call({ sessionId, ready: next });
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t update", (e && e.message) ? e.message : "Try again.");
@@ -913,7 +1090,7 @@
       try {
         btnStart.disabled = true;
         const call = functions.httpsCallable("delveeStartSession");
-        await withTimeout(call({ sessionId, durationMinutes: Number(durationSel.value) }), 12000, "Start session");
+        await call({ sessionId, durationMinutes: Number(durationSel.value) });
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t start", (e && e.message) ? e.message : "Try again.");
@@ -922,13 +1099,14 @@
       }
     });
 
+    // ✅ Stop RUNNING early -> COOLDOWN (requires backend callable delveeStopSession)
     btnStop.addEventListener("click", async () => {
       if (!isHost) return;
       if (state !== "RUNNING") return;
       try {
         btnStop.disabled = true;
         const call = functions.httpsCallable("delveeStopSession");
-        await withTimeout(call({ sessionId }), 12000, "Stop session");
+        await call({ sessionId });
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t stop", (e && e.message) ? e.message : "Deploy delveeStopSession and try again.");
@@ -952,7 +1130,7 @@
 
         if (!pendingTextPulse) pendingTextPulse = randomId("p");
         const call = functions.httpsCallable("delveePulseText");
-        await withTimeout(call({ sessionId, clientPulseId: pendingTextPulse, text }), 12000, "Pulse text");
+        await call({ sessionId, clientPulseId: pendingTextPulse, text });
 
         pendingTextPulse = null;
         pulseText.value = "";
@@ -988,26 +1166,25 @@
 
         const attachmentId = randomId("a");
         const create = functions.httpsCallable("delveeCreateImageUpload");
-        const res = await withTimeout(create({
+        const res = await create({
           sessionId,
           attachmentId,
           sizeBytes: file.size,
           contentType: file.type
-        }), 12000, "Create upload");
+        });
 
         const { uploadUrl, storagePath } = res.data || {};
         if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
 
         const bytes = await file.arrayBuffer();
-        const putRes = await withTimeout(fetch(uploadUrl, {
+        await fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": "application/octet-stream" },
           body: bytes
-        }), 20000, "Upload bytes");
-        if (!putRes || !putRes.ok) throw new Error(`Upload failed (${putRes ? putRes.status : "no response"})`);
+        });
 
         const commit = functions.httpsCallable("delveePulseImageCommit");
-        await withTimeout(commit({
+        await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
           attachment: {
@@ -1015,7 +1192,7 @@
             contentType: file.type,
             sizeBytes: file.size
           }
-        }), 12000, "Commit image");
+        });
 
         pendingImagePulse = null;
         pulseImage.value = "";
@@ -1042,7 +1219,7 @@
       try {
         btnChat.disabled = true;
         const call = functions.httpsCallable("delveeChatSend");
-        await withTimeout(call({ sessionId, text }), 12000, "Chat send");
+        await call({ sessionId, text });
         chatText.value = "";
       } catch (e) {
         console.error(e);
@@ -1052,6 +1229,7 @@
       }
     });
 
+    // ✅ Enter to send (Pulse + Chat)
     pulseText.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1081,12 +1259,13 @@
     btnSendSummary.addEventListener("click", sendSummaryToSetfeed);
     btnSendSummary2.addEventListener("click", sendSummaryToSetfeed);
 
+    // Close lobby (requires backend callable)
     btnCloseLobby.addEventListener("click", async () => {
       if (!auth.currentUser) return;
       try {
         btnCloseLobby.disabled = true;
         const call = functions.httpsCallable("delveeCloseLobby");
-        await withTimeout(call({ sessionId }), 12000, "Close lobby");
+        await call({ sessionId });
         setStatus("good", "Closed", "Lobby destroyed.");
         setTimeout(() => window.location.href = "./index.html", 600);
       } catch (e) {
@@ -1207,7 +1386,7 @@
       if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
 
       const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await withTimeout(call({ sessionId, storagePath }), 12000, "Create download URL");
+      const res = await call({ sessionId, storagePath });
       const url = res.data?.downloadUrl;
       const exp = res.data?.expiresAtMillis;
       if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
@@ -1342,8 +1521,8 @@
         const alias = aliasByUid.get(m.senderUid) || "—";
         row.innerHTML = `
           <div class="dv-chat-text">
-            <div style="font-size:12px; opacity:0.75; margin-bottom:4px;">${escapeHtml(alias)}</div>
-            ${escapeHtml(m.text || "")}
+            <div class="dv-chat-alias">${escapeHtml(alias)}</div>
+            <div class="dv-chat-body">${escapeHtml(m.text || "")}</div>
           </div>
         `;
         frag.appendChild(row);
@@ -1459,6 +1638,7 @@
       const code = (setfeedCodeInput.value || "").trim();
 
       if (!(state === "DONE" && session && session.summaryText)) return;
+
       if (!canAccountSend && !code) return;
 
       await sendSummaryToSetfeed();
@@ -1477,12 +1657,11 @@
 
       if (auth.currentUser) return;
 
-      setStatus("good", "Connecting…", "Signing in as guest…");
+      setStatus("good", "Joining as guest…", "No sign-in required for join links.");
       try {
-        await withTimeout(auth.signInAnonymously(), 9000, "Anonymous sign-in");
+        await auth.signInAnonymously();
       } catch (e) {
-        console.error("[anon] failed:", e);
-        throw new Error("Guest join failed. Allow storage/cookies for this site (disable shields/private mode) or sign in on home.");
+        throw new Error("Guest join is unavailable. Enable Anonymous Auth in Firebase or sign in on the home page.");
       }
     }
 
@@ -1490,12 +1669,11 @@
     // Boot: join + subscribe
     // -------------------------
     let booted = false;
-
     async function boot() {
       if (booted) return;
-      if (!sessionId) return;
-
       booted = true;
+
+      if (!sessionId) return;
 
       try {
         setStatus("good", "Connecting…", "Preparing your lobby session…");
@@ -1510,14 +1688,11 @@
       const myAlias = getAlias();
 
       try {
-        setStatus("good", "Connecting…", "Joining session…");
         const join = functions.httpsCallable("delveeJoinSession");
-        await withTimeout(join({ sessionId, alias: myAlias }), 12000, "Join session");
+        await join({ sessionId, alias: myAlias });
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
-        // Allow retry without reload
-        booted = false;
         return;
       }
 
@@ -1541,7 +1716,7 @@
           maybeAutoSend().catch(() => {});
         }, (err) => {
           console.error(err);
-          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee session/participants reads.");
+          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
         })
       );
 
@@ -1578,12 +1753,7 @@
       setInterval(renderCountdown, 500);
     }
 
-    // 🔒 Boot when auth state is ready
     auth.onAuthStateChanged(() => boot());
-
-    // ✅ Also attempt a boot soon even if onAuthStateChanged never fires (some blocked-storage scenarios)
-    setTimeout(() => boot(), 250);
-    setTimeout(() => boot(), 1500);
 
     window.addEventListener("beforeunload", () => {
       for (const u of unsub) try { u(); } catch (_) {}
