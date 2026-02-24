@@ -124,6 +124,7 @@
   </script>
 
   <style>
+    /* Keep your existing local additions */
     .dv-summary {
       margin-top: 12px;
       border-radius: 14px;
@@ -200,14 +201,17 @@
     }
     .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
 
+    /* ✅ Slightly more space between duration dropdown and Start button */
     .dv-host{ display:flex; align-items:center; gap: 12px; }
 
+    /* ✅ “Close lobby” button emphasis */
     .dv-btn-danger{
       border-color: rgba(255,255,255,0.16);
       background: rgba(255,60,60,0.16);
     }
     .dv-btn-danger:hover{ background: rgba(255,60,60,0.22); }
 
+    /* ✅ Attribution modal */
     .dv-modal-backdrop{
       position: fixed;
       inset: 0;
@@ -246,262 +250,6 @@
       justify-content:flex-end;
       margin-top: 12px;
     }
-
-    .dv-chat-msg{
-      border-radius: 16px;
-      border: 1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      padding: 10px 12px;
-      margin-bottom: 10px;
-    }
-    .dv-chat-alias{
-      font-size: 12px;
-      opacity: 0.72;
-      margin-bottom: 6px;
-      letter-spacing: 0.2px;
-    }
-    .dv-chat-body{
-      font-size: 14px;
-      line-height: 1.25;
-      opacity: 0.92;
-    }
-
-    .dv-pulse{
-      padding: 10px 12px !important;
-      border-radius: 16px !important;
-    }
-    .dv-pulse-kind{
-      font-size: 11px !important;
-      opacity: 0.70 !important;
-      margin-bottom: 6px !important;
-    }
-    .dv-pulse-text{
-      font-size: 14px !important;
-      line-height: 1.25 !important;
-    }
-    .dv-pulse.selected{
-      outline: 2px solid rgba(140, 160, 255, 0.55);
-      background: rgba(140, 160, 255, 0.08);
-    }
-
-    /* Prep overlay */
-    .dv-prep-overlay{
-      position:fixed; inset:0; z-index:1000;
-      background: rgba(0,0,0,0.86);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding: 18px;
-    }
-    .dv-prep-overlay.show{ display:flex; }
-    .dv-prep-inner{
-      width: min(980px, 100%);
-      max-height: calc(100vh - 36px);
-      overflow: hidden;
-      border-radius: 20px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(15,17,20,0.94);
-      box-shadow: 0 26px 80px rgba(0,0,0,0.6);
-      padding: 16px;
-      display:flex;
-      flex-direction:column;
-      gap: 12px;
-    }
-    .dv-prep-head{
-      display:flex;
-      align-items:flex-end;
-      gap: 14px;
-      justify-content:space-between;
-    }
-    .dv-prep-title{
-      font-size: 18px;
-      font-weight: 650;
-      letter-spacing: 0.2px;
-    }
-    .dv-prep-sub{
-      margin-top: 4px;
-      font-size: 12px;
-      opacity: 0.78;
-      line-height: 1.35;
-    }
-    .dv-prep-timer{
-      text-align:right;
-      min-width: 140px;
-    }
-    .dv-prep-timer .label{
-      font-size: 12px;
-      opacity: 0.72;
-    }
-    .dv-prep-timer .value{
-      margin-top: 2px;
-      font-size: 34px;
-      font-weight: 800;
-      letter-spacing: 0.5px;
-    }
-    .dv-prep-actions{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-      flex-wrap:wrap;
-    }
-    .dv-prep-count{
-      margin-left:auto;
-      font-size: 12px;
-      opacity: 0.8;
-      white-space: nowrap;
-    }
-    .dv-prep-grid{
-      border-top: 1px solid rgba(255,255,255,0.08);
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-      padding: 12px 2px;
-      overflow:auto;
-      display:grid;
-      grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-      gap: 10px;
-      min-height: 200px;
-    }
-    .dv-prep-tile{
-      border-radius: 16px;
-      overflow:hidden;
-      border: 1px solid rgba(255,255,255,0.10);
-      background: rgba(255,255,255,0.04);
-      display:flex;
-      flex-direction:column;
-    }
-    .dv-prep-thumb{
-      width:100%;
-      aspect-ratio: 1/1;
-      object-fit: cover;
-      display:block;
-    }
-    .dv-prep-meta{
-      padding: 8px 10px;
-      display:flex;
-      align-items:center;
-      gap: 8px;
-    }
-    .dv-prep-name{
-      flex: 1;
-      font-size: 12px;
-      opacity: 0.85;
-      overflow:hidden;
-      white-space:nowrap;
-      text-overflow:ellipsis;
-    }
-    .dv-prep-remove{
-      border: 0;
-      background: rgba(255,255,255,0.10);
-      color: rgba(233,238,246,0.92);
-      border-radius: 10px;
-      padding: 6px 8px;
-      cursor:pointer;
-    }
-    .dv-prep-foot{
-      display:flex;
-      align-items:center;
-      gap: 10px;
-    }
-    .dv-prep-hint{
-      flex:1;
-      font-size: 12px;
-      opacity: 0.75;
-      line-height: 1.35;
-    }
-
-    /* Summary vault */
-    .dv-vault{
-      position:fixed; inset:0; z-index:1100;
-      background: rgba(0,0,0,0.78);
-      display:none;
-      align-items:center;
-      justify-content:center;
-      padding: 18px;
-    }
-    .dv-vault.show{ display:flex; }
-    .dv-vault-inner{
-      width: min(980px, 100%);
-      max-height: calc(100vh - 36px);
-      overflow:hidden;
-      border-radius: 22px;
-      border: 1px solid rgba(255,255,255,0.12);
-      background: rgba(15,17,20,0.94);
-      box-shadow: 0 26px 90px rgba(0,0,0,0.65);
-      position:relative;
-    }
-    .dv-vault-topbar{
-      display:flex;
-      align-items:center;
-      justify-content:space-between;
-      padding: 12px 14px;
-      border-bottom: 1px solid rgba(255,255,255,0.08);
-    }
-    .dv-vault-title{
-      font-weight: 650;
-      letter-spacing: 0.2px;
-      opacity: 0.92;
-    }
-    .dv-vault-stage{
-      display:flex;
-      align-items:center;
-      justify-content:center;
-      padding: 44px 14px;
-      position:relative;
-      overflow:hidden;
-    }
-    .dv-vault-stage::before{
-      content:"";
-      position:absolute; inset:-40%;
-      background:
-        radial-gradient(circle at 30% 30%, rgba(140,160,255,0.20), transparent 55%),
-        radial-gradient(circle at 70% 60%, rgba(255,255,255,0.10), transparent 60%),
-        linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-      animation: dvVaultDrift 3.2s linear infinite;
-      opacity: 0.85;
-    }
-    @keyframes dvVaultDrift{
-      0%{ transform: translateX(-10%) translateY(-3%) rotate(0deg); }
-      100%{ transform: translateX(10%) translateY(3%) rotate(6deg); }
-    }
-    .dv-vault-word{
-      position:relative;
-      font-size: 42px;
-      font-weight: 900;
-      letter-spacing: 1.2px;
-      text-transform: lowercase;
-      color: rgba(233,238,246,0.95);
-      text-shadow: 0 10px 28px rgba(0,0,0,0.55);
-      animation: dvWordPop 540ms ease both;
-    }
-    @keyframes dvWordPop{
-      0%{ transform: translateY(10px); opacity: 0; }
-      100%{ transform: translateY(0); opacity: 1; }
-    }
-    .dv-vault-content{
-      display:none;
-      padding: 14px;
-    }
-    .dv-vault-content.show{ display:block; }
-    .dv-vault-scroll{
-      max-height: calc(100vh - 210px);
-      overflow:auto;
-      padding-right: 6px;
-    }
-    .dv-vault-grid2{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap: 12px;
-    }
-    .dv-collage-row{
-      display:flex;
-      gap: 10px;
-      flex-wrap:wrap;
-      align-items:center;
-      margin-top: 10px;
-    }
-    .dv-btn-secondary{
-      background: rgba(255,255,255,0.06);
-      border-color: rgba(255,255,255,0.14);
-    }
   </style>
 </head>
 
@@ -538,7 +286,7 @@
       </div>
 
       <div class="dv-layout">
-        <!-- Left -->
+        <!-- Left: participants -->
         <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -560,6 +308,8 @@
                 </select>
 
                 <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
+
+                <!-- ✅ Stop button during RUNNING (requires server callable delveeStopSession) -->
                 <button class="dv-btn hidden" id="btn-stop" type="button">Stop</button>
               </div>
             </div>
@@ -568,16 +318,14 @@
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- ✅ Setfeed delivery -->
+            <!-- ✅ Account-based Setfeed delivery (preferred) + fallback to manual code -->
             <div class="dv-summary" id="setfeedPanel">
               <h3>Setfeed summary delivery</h3>
 
               <div id="setfeedAccountBox" class="dv-muted2" style="margin-bottom:10px;">
-                Auto-send (ON) fetches your Setfeed receive code(s) and delivers to your Inbox automatically.
-                Auto-send requires a real signed-in user (not guest/anonymous).
+                Sign in with Google to send summaries to your account inbox automatically (web + app).
               </div>
 
-              <!-- Manual code box (shown when Auto-send is OFF) -->
               <div id="setfeedCodeBox">
                 <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
               </div>
@@ -587,10 +335,9 @@
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
               </div>
 
-              <div class="dv-muted2" id="setfeedStatus">
-                Tip: Delvee re-encrypts images for your Setfeed code so they decrypt in Setfeed.
-              </div>
+              <div class="dv-muted2" id="setfeedStatus">Tip: summary encrypts locally and sends to your inbox.</div>
 
+              <!-- ✅ Close lobby (appears 2 minutes after summary generated) -->
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-danger hidden" id="btn-close-lobby" type="button">Close lobby</button>
               </div>
@@ -601,7 +348,7 @@
           </div>
         </aside>
 
-        <!-- Center -->
+        <!-- Center: live feed + composer -->
         <section class="dv-main">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -625,7 +372,6 @@
                   <span id="dv-file-chip-label">Choose image</span>
                 </button>
 
-                <button class="dv-btn dv-btn-secondary" id="btn-from-prep" type="button">From prep queue</button>
                 <button class="dv-btn" id="btn-image" type="button">Pulse image</button>
               </div>
 
@@ -633,10 +379,30 @@
                 Fast, short, deliberate. Throttling is enforced.
               </div>
             </div>
+
+            <!-- Summary view (DONE) -->
+            <div class="dv-summary hidden" id="summaryPanel">
+              <h3>Session summary</h3>
+              <pre id="summaryText">—</pre>
+
+              <!-- ✅ Rich summary: aliases + messages (client-built) -->
+              <div class="dv-muted2" id="summaryScore" style="margin-top:10px;"></div>
+              <div class="dv-muted2" id="summaryMeta" style="margin-top:6px;">Generated on DONE.</div>
+
+              <div class="dv-minirow">
+                <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
+              </div>
+
+              <div class="dv-summary" id="summaryByAliasBox" style="margin-top:12px;">
+                <h3 style="margin-bottom:8px;">Messages by participant</h3>
+                <pre id="summaryByAlias">—</pre>
+              </div>
+            </div>
+
           </div>
         </section>
 
-        <!-- Right -->
+        <!-- Right: chat (cooldown/done only) -->
         <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -661,7 +427,7 @@
     </section>
   </main>
 
-  <!-- Attribution modal -->
+  <!-- ✅ Attribution modal -->
   <div class="dv-modal-backdrop" id="guessBackdrop" role="dialog" aria-modal="true" aria-label="Choose sender">
     <div class="dv-modal">
       <h3>Who do you think sent this?</h3>
@@ -677,106 +443,9 @@
     </div>
   </div>
 
-  <!-- Prep overlay -->
-  <div class="dv-prep-overlay" id="dvPrepOverlay" role="dialog" aria-modal="true" aria-label="Preparation phase">
-    <div class="dv-prep-inner">
-      <div class="dv-prep-head">
-        <div>
-          <div class="dv-prep-title">Prepare your images</div>
-          <div class="dv-prep-sub">
-            Add up to <span id="dvPrepMaxA">20</span> images now, then pulse them quickly during the session.
-            (Frontend-only prototype)
-          </div>
-        </div>
-        <div class="dv-prep-timer">
-          <div class="label">Preparation</div>
-          <div class="value" id="dvPrepCountdown">03:00</div>
-        </div>
-      </div>
-
-      <div class="dv-prep-actions">
-        <input id="dvPrepFileMulti" class="dv-file" type="file" accept="image/*" multiple />
-        <input id="dvPrepFileSingle" class="dv-file" type="file" accept="image/*" />
-
-        <button class="dv-btn dv-btn-primary" id="dvPrepAddMulti" type="button">Add images</button>
-        <button class="dv-btn" id="dvPrepAddOne" type="button">Add one</button>
-        <button class="dv-btn dv-btn-secondary" id="dvPrepClear" type="button">Clear all</button>
-
-        <div class="dv-prep-count">
-          <span id="dvPrepCount">0</span>/<span id="dvPrepMaxB">20</span>
-        </div>
-      </div>
-
-      <div class="dv-prep-grid" id="dvPrepGrid"></div>
-
-      <div class="dv-prep-foot">
-        <div class="dv-prep-hint">
-          You can also attach from this queue during RUNNING using “From prep queue”.
-        </div>
-        <button class="dv-btn" id="dvPrepClose" type="button">Hide</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Prep picker -->
-  <div class="dv-modal-backdrop" id="dvPrepPickerBackdrop" role="dialog" aria-modal="true" aria-label="Prep queue picker">
-    <div class="dv-modal" style="width:min(720px,100%);">
-      <h3>Select a queued image</h3>
-      <div class="dv-muted2" style="margin-top:6px;">Tap an image to attach it for pulsing.</div>
-      <div id="dvPrepPickerGrid" style="margin-top:12px; display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:10px; max-height:52vh; overflow:auto; padding-right:6px;"></div>
-      <div class="dv-modal-actions">
-        <button class="dv-btn" id="dvPrepPickerClose" type="button">Close</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- Summary vault -->
-  <div class="dv-vault" id="dvSummaryVault" role="dialog" aria-modal="true" aria-label="Session summary">
-    <div class="dv-vault-inner">
-      <div class="dv-vault-topbar">
-        <div class="dv-vault-title">Session summary</div>
-        <div style="display:flex; gap:10px; align-items:center;">
-          <button class="dv-btn dv-btn-secondary" id="btnDownloadCollage" type="button" disabled>Download collage</button>
-          <button class="dv-btn" id="dvVaultClose" type="button">Close</button>
-        </div>
-      </div>
-
-      <div class="dv-vault-stage" id="dvVaultStage">
-        <div class="dv-vault-word" id="dvVaultWord">ready.</div>
-      </div>
-
-      <div class="dv-vault-content" id="dvVaultContent">
-        <div class="dv-vault-scroll">
-          <div class="dv-vault-grid2">
-            <div class="dv-summary" style="margin-top:0;">
-              <h3>Summary</h3>
-              <pre id="summaryText">—</pre>
-
-              <div class="dv-muted2" id="summaryScore" style="margin-top:10px;"></div>
-              <div class="dv-muted2" id="summaryMeta" style="margin-top:6px;">Generated on DONE.</div>
-
-              <div class="dv-minirow">
-                <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
-              </div>
-            </div>
-
-            <div class="dv-summary">
-              <h3>Messages by participant</h3>
-              <pre id="summaryByAlias">—</pre>
-            </div>
-          </div>
-        </div>
-
-        <div class="dv-collage-row" style="padding: 12px 14px; border-top:1px solid rgba(255,255,255,0.08);">
-          <div class="dv-muted2" id="collageStatus">Collage will include summary text + session images.</div>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script>
     // -------------------------
-    // Utilities / IDs
+    // Utilities
     // -------------------------
     const qs = new URLSearchParams(window.location.search);
     const sessionId = (qs.get("session") || "").trim().toUpperCase();
@@ -786,16 +455,19 @@
 
     const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
+
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
 
-    const PRED_KEY = `dv_predictions_${sessionId}`;
+    // ✅ Predictions storage (per session)
+    const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
 
-    const DV_PREP_MS = 3 * 60 * 1000;
-    const DV_COOLDOWN_MS = 3 * 60 * 1000;
-    const DV_PREP_MAX_IMAGES = 20;
-
-    const PREP_DONE_KEY = `dv_prep_done_${sessionId}`;
-    const PREP_IMAGES_KEY = `dv_prep_images_${sessionId}`;
+    function withTimeout(promise, ms, label) {
+      let t;
+      const timeout = new Promise((_, reject) => {
+        t = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
+      });
+      return Promise.race([promise, timeout]).finally(() => clearTimeout(t));
+    }
 
     function getAlias() {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
@@ -803,6 +475,7 @@
     function setAlias(a) {
       try { localStorage.setItem(ALIAS_KEY, String(a || "").trim()); } catch (_) {}
     }
+
     function setLastSession(sid) {
       try { localStorage.setItem(LAST_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
     }
@@ -829,6 +502,13 @@
       return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     }
 
+    function escapeHtml(s) {
+      return String(s || "")
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;");
+    }
+
     function setHidden(el, hidden) {
       if (!el) return;
       el.classList.toggle("hidden", !!hidden);
@@ -839,6 +519,7 @@
       const prov = (u.providerData || []).map(p => p && p.providerId).filter(Boolean);
       return prov.includes("google.com");
     }
+
     function isAnon(u){
       return !!(u && u.isAnonymous);
     }
@@ -890,12 +571,17 @@
 
     const btnChooseImage = document.getElementById("btn-choose-image");
     const chipLabel = document.getElementById("dv-file-chip-label");
-    const btnFromPrep = document.getElementById("btn-from-prep");
 
     const chat = document.getElementById("chat");
     const chatText = document.getElementById("chatText");
     const btnChat = document.getElementById("btn-chat");
     const chatMeta = document.getElementById("chatMeta");
+
+    const summaryPanel = document.getElementById("summaryPanel");
+    const summaryTextEl = document.getElementById("summaryText");
+    const summaryMeta = document.getElementById("summaryMeta");
+    const summaryScore = document.getElementById("summaryScore");
+    const summaryByAliasEl = document.getElementById("summaryByAlias");
 
     const btnSendSummary = document.getElementById("btn-send-summary");
     const btnSendSummary2 = document.getElementById("btn-send-summary-2");
@@ -915,38 +601,6 @@
     const guessList = document.getElementById("guessList");
     const guessClose = document.getElementById("guessClose");
     const guessClear = document.getElementById("guessClear");
-
-    // Prep overlay
-    const dvPrepOverlay = document.getElementById("dvPrepOverlay");
-    const dvPrepCountdownEl = document.getElementById("dvPrepCountdown");
-    const dvPrepGrid = document.getElementById("dvPrepGrid");
-    const dvPrepCount = document.getElementById("dvPrepCount");
-    const dvPrepAddMulti = document.getElementById("dvPrepAddMulti");
-    const dvPrepAddOne = document.getElementById("dvPrepAddOne");
-    const dvPrepClear = document.getElementById("dvPrepClear");
-    const dvPrepClose = document.getElementById("dvPrepClose");
-    const dvPrepFileMulti = document.getElementById("dvPrepFileMulti");
-    const dvPrepFileSingle = document.getElementById("dvPrepFileSingle");
-
-    // Prep picker
-    const dvPrepPickerBackdrop = document.getElementById("dvPrepPickerBackdrop");
-    const dvPrepPickerGrid = document.getElementById("dvPrepPickerGrid");
-    const dvPrepPickerClose = document.getElementById("dvPrepPickerClose");
-
-    // Summary vault
-    const dvSummaryVault = document.getElementById("dvSummaryVault");
-    const dvVaultClose = document.getElementById("dvVaultClose");
-    const dvVaultStage = document.getElementById("dvVaultStage");
-    const dvVaultWord = document.getElementById("dvVaultWord");
-    const dvVaultContent = document.getElementById("dvVaultContent");
-
-    const summaryTextEl = document.getElementById("summaryText");
-    const summaryMeta = document.getElementById("summaryMeta");
-    const summaryScore = document.getElementById("summaryScore");
-    const summaryByAliasEl = document.getElementById("summaryByAlias");
-
-    const btnDownloadCollage = document.getElementById("btnDownloadCollage");
-    const collageStatus = document.getElementById("collageStatus");
 
     // -------------------------
     // Firestore refs
@@ -970,25 +624,18 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
+    // ✅ Cache participants for alias lookup + scoring
     let participantsCache = [];
     let aliasByUid = new Map();
+
+    // ✅ Cache pulses for rich summary + scoring
     let pulsesCache = [];
 
+    // ✅ Close-lobby timer
     let closeLobbyTimer = null;
+
+    // ✅ Guess modal state
     let currentGuessPulseId = null;
-    let selectedPulseId = null;
-
-    // PREP
-    let prepActive = false;
-    let prepEndsAt = 0;
-    let prepTick = null;
-
-    let prepImages = []; // [{id,name,type,dataUrl}]
-    let selectedPrepImage = null; // {id,name,type,dataUrl}
-
-    // Vault
-    let vaultShownForSession = false;
-    let vaultAnimating = false;
 
     // -------------------------
     // Chip file picker wiring
@@ -996,29 +643,6 @@
     function renderChosenFileName() {
       const f = (pulseImage && pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
       if (!chipLabel) return;
-
-      if (selectedPrepImage) {
-        chipLabel.innerHTML = "";
-        const name = document.createElement("span");
-        name.className = "dv-file-name";
-        name.textContent = `Prep: ${selectedPrepImage.name || "image"}`;
-
-        const clear = document.createElement("button");
-        clear.className = "dv-file-clear";
-        clear.type = "button";
-        clear.textContent = "×";
-        clear.setAttribute("aria-label", "Clear selected image");
-        clear.addEventListener("click", (e) => {
-          e.preventDefault();
-          e.stopPropagation();
-          selectedPrepImage = null;
-          renderChosenFileName();
-        });
-
-        chipLabel.appendChild(name);
-        chipLabel.appendChild(clear);
-        return;
-      }
 
       if (!f) {
         chipLabel.textContent = "Choose image";
@@ -1047,283 +671,22 @@
     }
 
     if (btnChooseImage && pulseImage) {
-      btnChooseImage.addEventListener("click", () => {
-        selectedPrepImage = null;
-        pulseImage.click();
-      });
-      pulseImage.addEventListener("change", () => {
-        selectedPrepImage = null;
-        renderChosenFileName();
-      });
+      btnChooseImage.addEventListener("click", () => pulseImage.click());
+      pulseImage.addEventListener("change", renderChosenFileName);
       renderChosenFileName();
     }
 
     // -------------------------
-    // Prep queue storage
-    // -------------------------
-    function prepLoad() {
-      try {
-        const raw = localStorage.getItem(PREP_IMAGES_KEY);
-        const parsed = raw ? JSON.parse(raw) : [];
-        prepImages = Array.isArray(parsed) ? parsed : [];
-      } catch {
-        prepImages = [];
-      }
-      renderPrepGrid();
-    }
-
-    function prepSave() {
-      try { localStorage.setItem(PREP_IMAGES_KEY, JSON.stringify(prepImages)); } catch (_) {}
-      renderPrepGrid();
-    }
-
-    function prepMarkDone() {
-      try { localStorage.setItem(PREP_DONE_KEY, "true"); } catch (_) {}
-    }
-
-    function prepIsDone() {
-      try { return localStorage.getItem(PREP_DONE_KEY) === "true"; } catch (_) { return false; }
-    }
-
-    function prepClearDoneFlag() {
-      try { localStorage.removeItem(PREP_DONE_KEY); } catch (_) {}
-    }
-
-    async function readFilesAsDataUrls(files) {
-      const arr = Array.from(files || []).filter(f => (f.type || "").startsWith("image/"));
-      const tasks = arr.map(file => new Promise((resolve) => {
-        const r = new FileReader();
-        r.onload = () => resolve({ file, dataUrl: String(r.result || "") });
-        r.onerror = () => resolve(null);
-        r.readAsDataURL(file);
-      }));
-      const res = (await Promise.all(tasks)).filter(Boolean);
-      return res;
-    }
-
-    async function prepAddFiles(files) {
-      if (!files || !files.length) return;
-      const room = DV_PREP_MAX_IMAGES - prepImages.length;
-      if (room <= 0) return;
-
-      const data = await readFilesAsDataUrls(files);
-      for (const it of data) {
-        if (prepImages.length >= DV_PREP_MAX_IMAGES) break;
-        const id = `${Date.now()}_${Math.random().toString(16).slice(2)}`;
-        prepImages.push({
-          id,
-          name: it.file.name || "image",
-          type: it.file.type || "image/*",
-          dataUrl: it.dataUrl
-        });
-      }
-      prepSave();
-    }
-
-    function renderPrepGrid() {
-      if (dvPrepCount) dvPrepCount.textContent = String(prepImages.length);
-      if (!dvPrepGrid) return;
-
-      dvPrepGrid.innerHTML = "";
-      if (!prepImages.length) {
-        const empty = document.createElement("div");
-        empty.style.opacity = "0.75";
-        empty.style.fontSize = "13px";
-        empty.textContent = "No images queued yet.";
-        dvPrepGrid.appendChild(empty);
-        return;
-      }
-
-      const frag = document.createDocumentFragment();
-      for (const img of prepImages) {
-        const tile = document.createElement("div");
-        tile.className = "dv-prep-tile";
-
-        const im = document.createElement("img");
-        im.className = "dv-prep-thumb";
-        im.src = img.dataUrl;
-        im.alt = img.name || "image";
-
-        const meta = document.createElement("div");
-        meta.className = "dv-prep-meta";
-
-        const name = document.createElement("div");
-        name.className = "dv-prep-name";
-        name.textContent = img.name || "image";
-
-        const remove = document.createElement("button");
-        remove.className = "dv-prep-remove";
-        remove.type = "button";
-        remove.textContent = "Remove";
-        remove.addEventListener("click", () => {
-          prepImages = prepImages.filter(x => x.id !== img.id);
-          if (selectedPrepImage && selectedPrepImage.id === img.id) {
-            selectedPrepImage = null;
-            renderChosenFileName();
-          }
-          prepSave();
-        });
-
-        meta.appendChild(name);
-        meta.appendChild(remove);
-
-        tile.appendChild(im);
-        tile.appendChild(meta);
-
-        frag.appendChild(tile);
-      }
-
-      dvPrepGrid.appendChild(frag);
-    }
-
-    function prepOverlayShow() { dvPrepOverlay?.classList.add("show"); }
-    function prepOverlayHide() { dvPrepOverlay?.classList.remove("show"); }
-
-    function prepStart(endsAtMillis) {
-      prepActive = true;
-      prepEndsAt = endsAtMillis;
-
-      prepOverlayShow();
-      setComposerLocked(true);
-
-      const tick = () => {
-        const left = prepEndsAt - Date.now();
-        if (dvPrepCountdownEl) dvPrepCountdownEl.textContent = fmtMs(left);
-
-        if (left <= 0) {
-          prepStop();
-          prepOverlayHide();
-          prepMarkDone();
-          setComposerLocked(false);
-          setStatus("good", "RUNNING", "Preparation finished. You can pulse now.");
-        }
-      };
-
-      prepStop();
-      prepTick = setInterval(tick, 250);
-      tick();
-    }
-
-    function prepStop() {
-      prepActive = false;
-      if (prepTick) {
-        clearInterval(prepTick);
-        prepTick = null;
-      }
-    }
-
-    // Prep picker
-    function prepPickerShow() {
-      if (!dvPrepPickerBackdrop || !dvPrepPickerGrid) return;
-      dvPrepPickerGrid.innerHTML = "";
-
-      if (!prepImages.length) {
-        const empty = document.createElement("div");
-        empty.style.opacity = "0.8";
-        empty.style.fontSize = "13px";
-        empty.textContent = "No queued images.";
-        dvPrepPickerGrid.appendChild(empty);
-      } else {
-        for (const img of prepImages) {
-          const tile = document.createElement("button");
-          tile.type = "button";
-          tile.style.border = "1px solid rgba(255,255,255,0.10)";
-          tile.style.background = "rgba(255,255,255,0.04)";
-          tile.style.borderRadius = "14px";
-          tile.style.overflow = "hidden";
-          tile.style.padding = "0";
-          tile.style.cursor = "pointer";
-
-          const im = document.createElement("img");
-          im.src = img.dataUrl;
-          im.alt = img.name || "image";
-          im.style.width = "100%";
-          im.style.aspectRatio = "1/1";
-          im.style.objectFit = "cover";
-          im.style.display = "block";
-
-          tile.appendChild(im);
-
-          tile.addEventListener("click", () => {
-            selectedPrepImage = img;
-            if (pulseImage) pulseImage.value = "";
-            renderChosenFileName();
-            dvPrepPickerBackdrop.classList.remove("show");
-          });
-
-          dvPrepPickerGrid.appendChild(tile);
-        }
-      }
-
-      dvPrepPickerBackdrop.classList.add("show");
-    }
-
-    function prepPickerHide() { dvPrepPickerBackdrop?.classList.remove("show"); }
-
-    dvPrepPickerClose?.addEventListener("click", prepPickerHide);
-    dvPrepPickerBackdrop?.addEventListener("click", (e) => {
-      if (e.target === dvPrepPickerBackdrop) prepPickerHide();
-    });
-
-    btnFromPrep?.addEventListener("click", () => {
-      if (state !== "RUNNING") {
-        setStatus("warn", "Not running", "Wait for the host to start.");
-        return;
-      }
-      if (prepActive) {
-        setStatus("warn", "Preparing", "Finish the preparation timer first.");
-        return;
-      }
-      prepPickerShow();
-    });
-
-    // Prep overlay controls
-    dvPrepAddMulti?.addEventListener("click", () => dvPrepFileMulti?.click());
-    dvPrepAddOne?.addEventListener("click", () => dvPrepFileSingle?.click());
-
-    dvPrepFileMulti?.addEventListener("change", async (e) => {
-      const files = Array.from(e.target.files || []);
-      e.target.value = "";
-      await prepAddFiles(files);
-    });
-    dvPrepFileSingle?.addEventListener("change", async (e) => {
-      const files = Array.from(e.target.files || []);
-      e.target.value = "";
-      await prepAddFiles(files.slice(0, 1));
-    });
-
-    dvPrepClear?.addEventListener("click", () => {
-      prepImages = [];
-      selectedPrepImage = null;
-      renderChosenFileName();
-      prepSave();
-    });
-
-    dvPrepClose?.addEventListener("click", () => prepOverlayHide());
-
-    // Composer lock for PREP
-    function setComposerLocked(locked) {
-      setHidden(composer, !!locked);
-      if (locked) {
-        composerHelp.textContent = "Preparation phase — queue your images.";
-      }
-    }
-
-    // -------------------------
-    // ✅ Setfeed autosend + E2E encryption (matches setfeed/send.html)
+    // Setfeed helpers (manual-code fallback)
     // -------------------------
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
     function bytesToB64(bytes) {
-      let binary = "";
-      const chunk = 0x8000;
+      let bin = "";
       const arr = (bytes instanceof Uint8Array) ? bytes : new Uint8Array(bytes);
-      for (let i = 0; i < arr.length; i += chunk) {
-        binary += String.fromCharCode(...arr.subarray(i, i + chunk));
-      }
-      return btoa(binary);
+      for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
+      return btoa(bin);
     }
-    function abToB64(ab) { return bytesToB64(new Uint8Array(ab)); }
 
     async function sha256Hex(str) {
       const data = new TextEncoder().encode(str);
@@ -1343,32 +706,19 @@
       );
     }
 
-    async function encryptBodyForCode(rawCode, plaintext) {
+    async function encryptForCode(rawCode, plaintext) {
       const passphrase = normalizeCodeAndroid(rawCode);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveAesKeyFromPassphrase(passphrase, salt);
+
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
-      return {
-        ciphertextB64: abToB64(ct),
-        ivB64: bytesToB64(iv),
-        saltB64: bytesToB64(salt),
-        normalizedPassphrase: passphrase
-      };
-    }
 
-    async function encryptBytesForCode(rawCode, bytesUint8) {
-      const passphrase = normalizeCodeAndroid(rawCode);
-      const salt = crypto.getRandomValues(new Uint8Array(16));
-      const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
-      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytesUint8);
       return {
-        ciphertextBytes: new Uint8Array(ct),
+        ciphertextB64: bytesToB64(new Uint8Array(ct)),
         ivB64: bytesToB64(iv),
         saltB64: bytesToB64(salt),
-        normalizedPassphrase: passphrase
       };
     }
 
@@ -1397,266 +747,28 @@
       try { localStorage.setItem(SENT_FLAG_KEY, "true"); } catch (_) {}
     }
 
-    // ✅ Fetch user’s Setfeed receive codes (required backend)
-    async function fetchUserSetfeedReceiveCode() {
-      const u = auth.currentUser;
-      if (!u || isAnon(u)) throw new Error("Auto-send requires a signed-in user (not guest).");
-
-      const call = functions.httpsCallable("getSetfeedReceiveCodesForUser");
-      const res = await call({});
-      const data = (res && res.data) ? res.data : {};
-
-      const codes =
-        (Array.isArray(data.codes) && data.codes) ||
-        (Array.isArray(data.receiveCodes) && data.receiveCodes) ||
-        (Array.isArray(data.setfeedReceiveCodes) && data.setfeedReceiveCodes) ||
-        [];
-
-      const primary =
-        (typeof data.primaryCode === "string" && data.primaryCode) ||
-        (typeof data.primaryReceiveCode === "string" && data.primaryReceiveCode) ||
-        (typeof data.defaultCode === "string" && data.defaultCode) ||
-        "";
-
-      const all = [];
-      if (primary) all.push(primary);
-      for (const c of codes) if (c && !all.includes(c)) all.push(c);
-
-      const norm = all.map(x => String(x || "").trim()).filter(Boolean);
-
-      // Prefer Secure codes if present
-      const sfs = norm.find(c => /^SFS/i.test(c.replace(/\s+/g, "")));
-      if (sfs) return sfs;
-
-      const sf = norm.find(c => /^SF/i.test(c.replace(/\s+/g, "")));
-      if (sf) return sf;
-
-      if (norm.length) return norm[0];
-
-      throw new Error("No Setfeed receive codes found for this user.");
-    }
-
-    async function putBytesToSignedUrl(uploadUrl, bytesUint8) {
-      const res = await fetch(uploadUrl, {
-        method: "PUT",
-        headers: { "Content-Type": "application/octet-stream" },
-        body: bytesUint8
-      });
-      if (!res.ok) {
-        const txt = await res.text().catch(() => "");
-        throw new Error(`Upload failed (${res.status}) ${txt}`.trim());
-      }
-    }
-
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
-    async function fetchBytes(url) {
-      const r = await fetch(url);
-      if (!r.ok) throw new Error(`Download failed (${r.status})`);
-      const ab = await r.arrayBuffer();
-      return new Uint8Array(ab);
-    }
-
-    function buildSetfeedSummaryText() {
-      // Keep it simple and stable: Setfeed renders body + attachments separately.
-      const base = String(session?.summaryText || "").trim();
-      const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
-
-      const header = `Delvee session ${sessionId}`;
-      const footer = imgCount ? `\n\nImages attached: ${imgCount}` : "";
-      return `${header}\n\n${base || "(no summary text)"}${footer}`;
-    }
-
-    async function sendSummaryToSetfeedResolvedCode(receiveCode) {
-      if (!auth.currentUser) throw new Error("Not signed in.");
-
-      if (!session || !session.summaryText) throw new Error("Summary not ready yet.");
-      if (hasSentForThisSession()) return;
-
-      const codeRaw = String(receiveCode || "").trim();
-      if (!codeRaw) throw new Error("Missing Setfeed receive code.");
-
-      // 1) Encrypt summary body for the Setfeed receive code
-      const bodyPlain = buildSetfeedSummaryText();
-      const encMsg = await encryptBodyForCode(codeRaw, bodyPlain);
-      const codeHash = await sha256Hex(encMsg.normalizedPassphrase);
-
-      // 2) Gather Delvee images -> download bytes -> encrypt for Setfeed code -> upload to Setfeed signed attachment path
-      const imagePulses = (pulsesCache || [])
-        .filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath);
-
-      const attachments = [];
-      for (const p of imagePulses) {
-        const srcPath = p.attachment.storagePath;
-        const contentType = p.attachment.contentType || "image/*";
-
-        const dl = await getDownloadUrl(srcPath);
-        if (!dl) continue;
-
-        const plainBytes = await fetchBytes(dl);
-
-        const enc = await encryptBytesForCode(codeRaw, plainBytes);
-
-        const attachmentId = randomId("dvimg");
-        const callUpload = functions.httpsCallable("createSignedAttachmentUpload");
-        const up = await callUpload({
-          attachmentId,
-          contentType,
-          sizeBytes: enc.ciphertextBytes.length
-        });
-
-        const upData = up && up.data ? up.data : {};
-        const uploadUrl = upData.uploadUrl;
-        const storagePath = upData.storagePath;
-        if (!uploadUrl || !storagePath) throw new Error("Upload URL missing (createSignedAttachmentUpload).");
-
-        await putBytesToSignedUrl(uploadUrl, enc.ciphertextBytes);
-
-        attachments.push({
-          attachmentId,
-          storagePath,
-          contentType,
-          sizeBytes: enc.ciphertextBytes.length,
-          ivB64: enc.ivB64,
-          saltB64: enc.saltB64
-        });
-      }
-
-      // 3) Send one Setfeed envelope w/ attachments
-      const deliverAtLocalIso = new Date().toISOString(); // immediate
-      const callable = functions.httpsCallable("sendSignedCiphertext");
-
-      await callable({
-        codeHash,
-        ciphertext: encMsg.ciphertextB64,
-        iv: encMsg.ivB64,
-        salt: encMsg.saltB64,
-        deliverAtLocalIso,
-        userTimezone: tzName(),
-        clientRequestId: randomId("dvsum"),
-        attachments
-      });
-
-      markSentForThisSession();
-    }
-
-    async function sendSummaryToSetfeed() {
-      if (!auth.currentUser) return;
-
-      if (!session || !session.summaryText) {
-        setStatus("warn", "No summary", "Summary not ready yet.");
-        return;
-      }
-      if (hasSentForThisSession()) {
-        setStatus("good", "Already sent", "This session’s summary has already been sent.");
-        refreshSetfeedUI();
-        return;
-      }
-
-      btnSendSummary.disabled = true;
-      btnSendSummary2.disabled = true;
-      btnToggleAutosend.disabled = true;
-
-      try {
-        const auto = getAutosend();
-
-        let codeToUse = "";
-        if (auto) {
-          setfeedStatus.textContent = "Auto-send ON: fetching your Setfeed receive code…";
-          codeToUse = await fetchUserSetfeedReceiveCode();
-          setfeedStatus.textContent = "Encrypting + sending to your Setfeed Inbox…";
-        } else {
-          codeToUse = (setfeedCodeInput.value || "").trim();
-          if (!codeToUse) {
-            setStatus("warn", "Missing code", "Paste your Setfeed receive code first (or enable Auto-send).");
-            return;
-          }
-          setfeedStatus.textContent = "Encrypting + sending…";
-        }
-
-        await sendSummaryToSetfeedResolvedCode(codeToUse);
-
-        setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
-        setStatus("good", "Sent", "Summary delivered to Setfeed (with decryptable images).";
-      } catch (e) {
-        console.error(e);
-        const msg = (e && e.message) ? e.message : "Try again.";
-        setfeedStatus.textContent = "Couldn’t send. Verify functions are deployed and try again.";
-        setStatus("warn", "Send failed", msg);
-      } finally {
-        btnToggleAutosend.disabled = false;
-        refreshSetfeedUI();
-      }
-    }
-
-    async function maybeAutoSend() {
-      if (!getAutosend()) return;
-      if (hasSentForThisSession()) return;
-
-      // Only when DONE and summary exists
-      if (!(state === "DONE" && session && session.summaryText)) return;
-
-      // Auto-send requires real user (not guest)
-      const u = auth.currentUser;
-      if (!u || isAnon(u)) return;
-
-      await sendSummaryToSetfeed();
-    }
-
     function refreshSetfeedUI() {
       const auto = getAutosend();
       btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
 
-      // ✅ Requirement: when Auto-send is OFF => show receive code input.
-      // When Auto-send is ON => hide manual code input (we fetch codes for the user).
-      setHidden(setfeedCodeBox, auto);
-
       const u = auth.currentUser;
-      const authed = !!u;
-      const canAuto = authed && !isAnon(u);
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
 
-      // Help text
-      if (!authed) {
-        setfeedAccountBox.textContent =
-          "Sign in to Delvee to send to Setfeed. (Auto-send also requires a real signed-in user.)";
-      } else if (isAnon(u)) {
-        setfeedAccountBox.textContent =
-          "You joined as guest. Auto-send is unavailable for guest sessions. Turn Auto-send OFF and paste a Setfeed receive code.";
-      } else {
-        setfeedAccountBox.textContent =
-          "Auto-send (ON) fetches your Setfeed receive code(s) and delivers to your Inbox automatically.";
-      }
+      // Prefer account-based flow if signed in (non-anon google)
+      setHidden(setfeedAccountBox, !canAccountSend);
+      setHidden(setfeedCodeBox, canAccountSend);
 
-      // If auto is ON but user is guest, we keep it ON visually but warn + disable send
+      const code = (setfeedCodeInput.value || "").trim();
       const hasSummary = !!(session && session.summaryText);
-      const codeOk = !!(setfeedCodeInput.value || "").trim();
+      const canSend =
+        (state === "DONE" && hasSummary) &&
+        (canAccountSend || !!code);
 
-      const canSendManual = authed && hasSummary && (state === "DONE") && codeOk;
-      const canSendAuto = authed && hasSummary && (state === "DONE") && canAuto;
-
-      const canSend = auto ? canSendAuto : canSendManual;
-
-      btnSendSummary.disabled = !canSend || hasSentForThisSession();
-      btnSendSummary2.disabled = !canSend || hasSentForThisSession();
+      btnSendSummary.disabled = !canSend;
+      btnSendSummary2.disabled = !canSend;
 
       if (hasSentForThisSession()) {
         setfeedStatus.textContent = "Summary sent for this session.";
-        return;
-      }
-
-      if (!authed) {
-        setfeedStatus.textContent = "Sign in to send the summary to Setfeed.";
         return;
       }
 
@@ -1670,21 +782,98 @@
         return;
       }
 
-      if (auto) {
-        setfeedStatus.textContent = canAuto
-          ? "Auto-send is ON: will send once per session (fetching your receive code)."
-          : "Auto-send is ON, but unavailable for guest sessions. Turn it OFF to paste a code.";
+      if (canAccountSend) {
+        setfeedStatus.textContent =
+          auto
+            ? "Auto-send is ON: will send once per session (account inbox)."
+            : "Ready to send (account inbox).";
       } else {
-        setfeedStatus.textContent = codeOk
-          ? "Auto-send is OFF: ready to send using the pasted Setfeed receive code."
-          : "Auto-send is OFF: paste your Setfeed receive code to send.";
+        setfeedStatus.textContent =
+          code
+            ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
+            : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
+      }
+    }
+
+    async function sendSummaryToSetfeed() {
+      if (!auth.currentUser) return;
+
+      const u = auth.currentUser;
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
+
+      if (!session || !session.summaryText) {
+        setStatus("warn", "No summary", "Summary not ready yet.");
+        return;
+      }
+      if (hasSentForThisSession()) {
+        setStatus("good", "Already sent", "This session’s summary has already been sent.");
+        refreshSetfeedUI();
+        return;
+      }
+
+      btnSendSummary.disabled = true;
+      btnSendSummary2.disabled = true;
+
+      try {
+        if (canAccountSend) {
+          setfeedStatus.textContent = "Sending to account inbox…";
+          const call = functions.httpsCallable("delveeSendSummaryToSetfeed");
+          await withTimeout(call({ sessionId }), 12000, "Account send");
+          markSentForThisSession();
+          setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
+          setStatus("good", "Sent", "Summary delivered to your account inbox.");
+          return;
+        }
+
+        const codeRaw = (setfeedCodeInput.value || "").trim();
+        if (!codeRaw) {
+          setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
+          return;
+        }
+
+        setfeedStatus.textContent = "Encrypting + sending…";
+
+        const normalized = normalizeCodeAndroid(codeRaw);
+        const codeHash = await sha256Hex(normalized);
+
+        const enc = await encryptForCode(codeRaw, session.summaryText);
+
+        const deliverAtLocalIso = new Date().toISOString();
+        const call = functions.httpsCallable("sendSignedCiphertext");
+
+        await withTimeout(call({
+          codeHash,
+          ciphertext: enc.ciphertextB64,
+          iv: enc.ivB64,
+          salt: enc.saltB64,
+          deliverAtLocalIso,
+          userTimezone: tzName(),
+          clientRequestId: randomId("sum"),
+          attachments: [],
+        }), 12000, "Send summary");
+
+        markSentForThisSession();
+        setfeedStatus.textContent = "Sent — check your Setfeed Inbox.";
+        setStatus("good", "Sent", "Summary delivered to your Setfeed Inbox.");
+      } catch (e) {
+        console.error(e);
+        const msg = (e && e.message) ? e.message : "Try again.";
+        setfeedStatus.textContent =
+          canAccountSend
+            ? "Couldn’t send to account inbox. (You may need to deploy delveeSendSummaryToSetfeed.)"
+            : "Couldn’t send. Check the code is valid and try again.";
+        setStatus("warn", "Send failed", msg);
+      } finally {
+        refreshSetfeedUI();
       }
     }
 
     // -------------------------
-    // Actions (top)
+    // Actions
     // -------------------------
-    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
+    btnHome.addEventListener("click", () => {
+      window.location.href = "./index.html";
+    });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -1698,19 +887,19 @@
     btnLeave.addEventListener("click", async () => {
       try {
         const leave = functions.httpsCallable("delveeLeaveSession");
-        await leave({ sessionId });
+        await withTimeout(leave({ sessionId }), 8000, "Leave session");
       } catch (_) {}
       window.location.href = "./index.html";
     });
 
-    // Ready
     btnReady.addEventListener("click", async () => {
       if (!auth.currentUser) return;
+
       const next = !(me && me.ready);
       try {
         btnReady.disabled = true;
         const call = functions.httpsCallable("delveeSetReady");
-        await call({ sessionId, ready: next });
+        await withTimeout(call({ sessionId, ready: next }), 10000, "Set ready");
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t update", (e && e.message) ? e.message : "Try again.");
@@ -1719,14 +908,12 @@
       }
     });
 
-    // Start
     btnStart.addEventListener("click", async () => {
       if (!isHost) return;
       try {
         btnStart.disabled = true;
-        prepClearDoneFlag();
         const call = functions.httpsCallable("delveeStartSession");
-        await call({ sessionId, durationMinutes: Number(durationSel.value) });
+        await withTimeout(call({ sessionId, durationMinutes: Number(durationSel.value) }), 12000, "Start session");
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t start", (e && e.message) ? e.message : "Try again.");
@@ -1735,14 +922,13 @@
       }
     });
 
-    // Stop
     btnStop.addEventListener("click", async () => {
       if (!isHost) return;
       if (state !== "RUNNING") return;
       try {
         btnStop.disabled = true;
         const call = functions.httpsCallable("delveeStopSession");
-        await call({ sessionId });
+        await withTimeout(call({ sessionId }), 12000, "Stop session");
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t stop", (e && e.message) ? e.message : "Deploy delveeStopSession and try again.");
@@ -1751,23 +937,12 @@
       }
     });
 
-    // -------------------------
-    // Pulse actions
-    // -------------------------
     btnPulse.addEventListener("click", async () => {
       const text = pulseText.value.trim();
       if (!text) return;
 
       if (state !== "RUNNING") {
         setStatus("warn", "Not running", "Wait for the host to start.");
-        return;
-      }
-      if (prepActive) {
-        setStatus("warn", "Preparing", "Finish the preparation timer first.");
-        return;
-      }
-      if (!prepIsDone() && session && session.state === "RUNNING") {
-        setStatus("warn", "Preparing", "Finish the preparation timer first.");
         return;
       }
 
@@ -1777,7 +952,7 @@
 
         if (!pendingTextPulse) pendingTextPulse = randomId("p");
         const call = functions.httpsCallable("delveePulseText");
-        await call({ sessionId, clientPulseId: pendingTextPulse, text });
+        await withTimeout(call({ sessionId, clientPulseId: pendingTextPulse, text }), 12000, "Pulse text");
 
         pendingTextPulse = null;
         pulseText.value = "";
@@ -1791,36 +966,16 @@
       }
     });
 
-    function dataUrlToBytes(dataUrl) {
-      const parts = String(dataUrl || "").split(",");
-      if (parts.length < 2) throw new Error("Invalid data URL");
-      const b64 = parts[1];
-      const bin = atob(b64);
-      const out = new Uint8Array(bin.length);
-      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
-      return out;
-    }
-
     btnImage.addEventListener("click", async () => {
+      const file = pulseImage.files && pulseImage.files[0];
+      if (!file) return;
+
       if (state !== "RUNNING") {
         setStatus("warn", "Not running", "Wait for the host to start.");
         return;
       }
-      if (prepActive) {
-        setStatus("warn", "Preparing", "Finish the preparation timer first.");
-        return;
-      }
-      if (!prepIsDone() && session && session.state === "RUNNING") {
-        setStatus("warn", "Preparing", "Finish the preparation timer first.");
-        return;
-      }
 
-      const file = (pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
-      const usePrep = !!selectedPrepImage;
-
-      if (!file && !usePrep) return;
-
-      if (file && !file.type.startsWith("image/")) {
+      if (!file.type.startsWith("image/")) {
         setStatus("warn", "Not an image", "Choose an image file.");
         return;
       }
@@ -1833,53 +988,36 @@
 
         const attachmentId = randomId("a");
         const create = functions.httpsCallable("delveeCreateImageUpload");
-
-        let contentType = "image/png";
-        let sizeBytes = 0;
-        let bytes;
-
-        if (usePrep) {
-          contentType = selectedPrepImage.type || "image/png";
-          bytes = dataUrlToBytes(selectedPrepImage.dataUrl);
-          sizeBytes = bytes.byteLength;
-        } else {
-          contentType = file.type;
-          bytes = new Uint8Array(await file.arrayBuffer());
-          sizeBytes = file.size;
-        }
-
-        const res = await create({
+        const res = await withTimeout(create({
           sessionId,
           attachmentId,
-          sizeBytes,
-          contentType
-        });
+          sizeBytes: file.size,
+          contentType: file.type
+        }), 12000, "Create upload");
 
         const { uploadUrl, storagePath } = res.data || {};
         if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
 
-        await fetch(uploadUrl, {
+        const bytes = await file.arrayBuffer();
+        const putRes = await withTimeout(fetch(uploadUrl, {
           method: "PUT",
           headers: { "Content-Type": "application/octet-stream" },
           body: bytes
-        });
+        }), 20000, "Upload bytes");
+        if (!putRes || !putRes.ok) throw new Error(`Upload failed (${putRes ? putRes.status : "no response"})`);
 
         const commit = functions.httpsCallable("delveePulseImageCommit");
-        await commit({
+        await withTimeout(commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: { storagePath, contentType, sizeBytes }
-        });
+          attachment: {
+            storagePath,
+            contentType: file.type,
+            sizeBytes: file.size
+          }
+        }), 12000, "Commit image");
 
         pendingImagePulse = null;
-
-        if (usePrep && selectedPrepImage) {
-          const usedId = selectedPrepImage.id;
-          selectedPrepImage = null;
-          prepImages = prepImages.filter(x => x.id !== usedId);
-          prepSave();
-        }
-
         pulseImage.value = "";
         renderChosenFileName();
         composerHelp.textContent = "Image pulsed.";
@@ -1892,7 +1030,6 @@
       }
     });
 
-    // Chat
     btnChat.addEventListener("click", async () => {
       const text = chatText.value.trim();
       if (!text) return;
@@ -1905,7 +1042,7 @@
       try {
         btnChat.disabled = true;
         const call = functions.httpsCallable("delveeChatSend");
-        await call({ sessionId, text });
+        await withTimeout(call({ sessionId, text }), 12000, "Chat send");
         chatText.value = "";
       } catch (e) {
         console.error(e);
@@ -1915,7 +1052,6 @@
       }
     });
 
-    // Enter shortcuts
     pulseText.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1929,9 +1065,7 @@
       }
     });
 
-    // -------------------------
-    // Setfeed UI wiring
-    // -------------------------
+    // Setfeed controls
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
@@ -1939,23 +1073,20 @@
     });
 
     btnToggleAutosend.addEventListener("click", () => {
-      const next = !getAutosend();
-      setAutosend(next);
+      setAutosend(!getAutosend());
       refreshSetfeedUI();
-      // If user just turned it on and we already have DONE+summary, attempt autosend immediately
       maybeAutoSend().catch(() => {});
     });
 
     btnSendSummary.addEventListener("click", sendSummaryToSetfeed);
     btnSendSummary2.addEventListener("click", sendSummaryToSetfeed);
 
-    // Close lobby (requires backend callable)
     btnCloseLobby.addEventListener("click", async () => {
       if (!auth.currentUser) return;
       try {
         btnCloseLobby.disabled = true;
         const call = functions.httpsCallable("delveeCloseLobby");
-        await call({ sessionId });
+        await withTimeout(call({ sessionId }), 12000, "Close lobby");
         setStatus("good", "Closed", "Lobby destroyed.");
         setTimeout(() => window.location.href = "./index.html", 600);
       } catch (e) {
@@ -1969,34 +1100,9 @@
     // -------------------------
     // Guess modal
     // -------------------------
-    function rebuildAliasMap(list){
-      aliasByUid = new Map();
-      for (const p of list) {
-        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
-      }
-    }
-
-    function summarizePulsePreview(it){
-      if (!it) return "—";
-      if (it.kind === "image") return "image pulse";
-      const t = String(it.text || "").trim();
-      return t.length > 140 ? (t.slice(0, 139) + "…") : (t || "[empty]");
-    }
-
-    function updateFeedSelectionHighlight() {
-      const nodes = feed.querySelectorAll("[data-pulse-id]");
-      nodes.forEach(n => {
-        const pid = n.getAttribute("data-pulse-id");
-        n.classList.toggle("selected", !!selectedPulseId && pid === selectedPulseId);
-      });
-    }
-
     function modalShowGuess(pulseId, previewText){
       currentGuessPulseId = pulseId;
-      selectedPulseId = pulseId;
       guessPreview.textContent = previewText || "—";
-
-      updateFeedSelectionHighlight();
 
       const preds = loadPredictions();
       const existing = preds[pulseId] || null;
@@ -2010,7 +1116,9 @@
         b.type = "button";
         b.className = "dv-btn";
         b.textContent = p.alias || "—";
-        if (existing && existing.guessedUid === p.uid) b.classList.add("dv-btn-primary");
+        if (existing && existing.guessedUid === p.uid) {
+          b.classList.add("dv-btn-primary");
+        }
         b.addEventListener("click", () => {
           const next = loadPredictions();
           next[pulseId] = { guessedUid: p.uid, guessedAlias: p.alias || null };
@@ -2024,7 +1132,6 @@
       guessList.appendChild(frag);
       guessBackdrop.classList.add("show");
     }
-
     function modalHideGuess(){
       guessBackdrop.classList.remove("show");
       currentGuessPulseId = null;
@@ -2035,9 +1142,9 @@
       if (e.target === guessBackdrop) modalHideGuess();
     });
     guessClear.addEventListener("click", () => {
-      if (!selectedPulseId) return;
+      if (!currentGuessPulseId) return;
       const preds = loadPredictions();
-      delete preds[selectedPulseId];
+      delete preds[currentGuessPulseId];
       savePredictions(preds);
       modalHideGuess();
       renderSummaryIfReady();
@@ -2046,6 +1153,74 @@
     // -------------------------
     // Realtime rendering
     // -------------------------
+    function renderState(nextState) {
+      state = nextState || "—";
+      statePill.textContent = state;
+
+      if (state === "LOBBY") {
+        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
+      } else if (state === "RUNNING") {
+        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      } else if (state === "COOLDOWN") {
+        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+      } else if (state === "DONE") {
+        hint.textContent = "Done. Summary is ready.";
+      } else if (state === "CANCELLED") {
+        hint.textContent = "This lobby expired before it started.";
+      } else {
+        hint.textContent = "—";
+      }
+
+      setHidden(composer, state !== "RUNNING");
+
+      const chatOpen = (state === "COOLDOWN" || state === "DONE");
+      chatText.disabled = !chatOpen;
+      btnChat.disabled = !chatOpen;
+      chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
+
+      setHidden(btnStop, !(isHost && state === "RUNNING"));
+
+      refreshSetfeedUI();
+    }
+
+    function renderCountdown() {
+      if (!session) { countdownEl.textContent = ""; return; }
+
+      const now = Date.now();
+      if (state === "RUNNING" && session.endAtMillis) {
+        const left = session.endAtMillis - now;
+        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
+      } else if (state === "COOLDOWN" && session.cooldownEndsAtMillis) {
+        const left = session.cooldownEndsAtMillis - now;
+        countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
+      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
+        const left = session.reservationExpiresAtMillis - now;
+        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
+      } else {
+        countdownEl.textContent = state;
+      }
+    }
+
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await withTimeout(call({ sessionId, storagePath }), 12000, "Create download URL");
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
+    function rebuildAliasMap(list){
+      aliasByUid = new Map();
+      for (const p of list) {
+        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
+      }
+    }
+
     function renderParticipants(list) {
       participantsCache = Array.isArray(list) ? list : [];
       participantsCache.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
@@ -2094,6 +1269,13 @@
       renderSummaryIfReady();
     }
 
+    function summarizePulsePreview(it){
+      if (!it) return "—";
+      if (it.kind === "image") return "image pulse";
+      const t = String(it.text || "").trim();
+      return t.length > 140 ? (t.slice(0, 139) + "…") : (t || "[empty]");
+    }
+
     async function renderFeed(items) {
       pulsesCache = Array.isArray(items) ? items : [];
       feedMeta.textContent = `${pulsesCache.length} pulses`;
@@ -2134,8 +1316,6 @@
         }
 
         const pulseId = it.clientPulseId ? `${it.senderUid || "?"}_${it.clientPulseId}` : (it.id || it.createdAtMillis || randomId("pulse"));
-        card.setAttribute("data-pulse-id", pulseId);
-
         card.addEventListener("click", () => modalShowGuess(pulseId, summarizePulsePreview(it)));
         card.addEventListener("keydown", (e) => {
           if (e.key === "Enter" || e.key === " ") {
@@ -2149,8 +1329,6 @@
 
       feed.innerHTML = "";
       feed.appendChild(frag);
-
-      updateFeedSelectionHighlight();
     }
 
     function renderChat(items) {
@@ -2162,18 +1340,12 @@
         row.className = "dv-chat-msg";
 
         const alias = aliasByUid.get(m.senderUid) || "—";
-
-        const a = document.createElement("div");
-        a.className = "dv-chat-alias";
-        a.textContent = alias;
-
-        const b = document.createElement("div");
-        b.className = "dv-chat-body";
-        b.textContent = m.text || "";
-
-        row.appendChild(a);
-        row.appendChild(b);
-
+        row.innerHTML = `
+          <div class="dv-chat-text">
+            <div style="font-size:12px; opacity:0.75; margin-bottom:4px;">${escapeHtml(alias)}</div>
+            ${escapeHtml(m.text || "")}
+          </div>
+        `;
         frag.appendChild(row);
       }
 
@@ -2210,7 +1382,7 @@
       for (const it of (pulsesCache || [])) {
         const uid = it.senderUid || "unknown";
         const alias = aliasByUid.get(uid) || "—";
-        const key = `${alias} (${String(uid).slice(0,6)}…)`;
+        const key = `${alias} (${uid.slice(0,6)}…)`;
 
         if (!groups.has(key)) groups.set(key, []);
         if (it.kind === "image") groups.get(key).push("• [image]");
@@ -2253,43 +1425,9 @@
       }, delay);
     }
 
-    // Vault
-    function vaultShow() { dvSummaryVault?.classList.add("show"); }
-    function vaultHide() { dvSummaryVault?.classList.remove("show"); }
-
-    dvVaultClose?.addEventListener("click", vaultHide);
-    dvSummaryVault?.addEventListener("click", (e) => {
-      if (e.target === dvSummaryVault) vaultHide();
-    });
-
-    async function vaultRunRevealThenShowContent() {
-      if (vaultAnimating) return;
-      vaultAnimating = true;
-
-      vaultShow();
-      dvVaultContent.classList.remove("show");
-      dvVaultStage.style.display = "flex";
-
-      const steps = ["ready.", "set.", "reveal."];
-      for (let i = 0; i < steps.length; i++) {
-        dvVaultWord.textContent = steps[i];
-        dvVaultWord.style.animation = "none";
-        // eslint-disable-next-line no-unused-expressions
-        dvVaultWord.offsetHeight;
-        dvVaultWord.style.animation = "";
-        await new Promise(r => setTimeout(r, 700));
-      }
-
-      await new Promise(r => setTimeout(r, 350));
-
-      dvVaultStage.style.display = "none";
-      dvVaultContent.classList.add("show");
-
-      vaultAnimating = false;
-    }
-
     function renderSummaryIfReady() {
       const has = !!(session && session.summaryText);
+      setHidden(summaryPanel, !(state === "DONE" && has));
 
       if (state === "DONE" && has) {
         summaryTextEl.textContent = session.summaryText || "";
@@ -2306,320 +1444,28 @@
             : "Correct predictions: — (click pulses to make guesses)";
 
         summaryByAliasEl.textContent = buildSummaryByAlias();
-
-        const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
-        btnDownloadCollage.disabled = imgCount === 0;
-        collageStatus.textContent = imgCount
-          ? `Collage will include summary text + ${imgCount} image${imgCount === 1 ? "" : "s"}.`
-          : "No images in this session to collage.";
-
-        if (!vaultShownForSession) {
-          vaultShownForSession = true;
-          vaultRunRevealThenShowContent().catch(() => {});
-        }
       }
 
       scheduleCloseLobbyButton();
       refreshSetfeedUI();
     }
 
-    // -------------------------
-    // Collage download (unchanged)
-    // -------------------------
-    function loadImage(url) {
-      return new Promise((resolve) => {
-        const img = new Image();
-        img.crossOrigin = "anonymous";
-        img.onload = () => resolve(img);
-        img.onerror = () => resolve(null);
-        img.src = url;
-      });
-    }
+    async function maybeAutoSend() {
+      if (!getAutosend()) return;
+      if (hasSentForThisSession()) return;
 
-    function roundRect(ctx, x, y, w, h, r) {
-      const rr = Math.min(r, w / 2, h / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + rr, y);
-      ctx.arcTo(x + w, y, x + w, y + h, rr);
-      ctx.arcTo(x + w, y + h, x, y + h, rr);
-      ctx.arcTo(x, y + h, x, y, rr);
-      ctx.arcTo(x, y, x + w, y, rr);
-      ctx.closePath();
-    }
+      const u = auth.currentUser;
+      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
+      const code = (setfeedCodeInput.value || "").trim();
 
-    function coverSourceRect(srcW, srcH, dstW, dstH) {
-      const srcAR = srcW / srcH;
-      const dstAR = dstW / dstH;
-      let sw = srcW, sh = srcH, sx = 0, sy = 0;
+      if (!(state === "DONE" && session && session.summaryText)) return;
+      if (!canAccountSend && !code) return;
 
-      if (srcAR > dstAR) {
-        sh = srcH;
-        sw = Math.floor(srcH * dstAR);
-        sx = Math.floor((srcW - sw) / 2);
-        sy = 0;
-      } else {
-        sw = srcW;
-        sh = Math.floor(srcW / dstAR);
-        sx = 0;
-        sy = Math.floor((srcH - sh) / 2);
-      }
-      return { sx, sy, sw, sh };
-    }
-
-    async function buildCollagePngBlob() {
-      const summary = String(session?.summaryText || "").trim();
-      const imagePulses = (pulsesCache || [])
-        .filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath)
-        .slice()
-        .reverse();
-
-      const urls = [];
-      for (const p of imagePulses) {
-        try {
-          const u = await getDownloadUrl(p.attachment.storagePath);
-          if (u) urls.push(u);
-        } catch (_) {}
-      }
-
-      const imgs = (await Promise.all(urls.map(loadImage))).filter(Boolean);
-
-      const padding = 36;
-      const headerH = 160;
-      const footerH = 28;
-      const cols = 4;
-      const tile = 260;
-      const gap = 14;
-
-      const rows = Math.max(1, Math.ceil(imgs.length / cols));
-      const gridW = cols * tile + (cols - 1) * gap;
-      const gridH = rows * tile + (rows - 1) * gap;
-
-      const width = Math.max(900, padding * 2 + gridW);
-      const height = padding * 2 + headerH + gridH + footerH;
-
-      const canvas = document.createElement("canvas");
-      canvas.width = width;
-      canvas.height = height;
-
-      const ctx = canvas.getContext("2d");
-      if (!ctx) throw new Error("Canvas unavailable");
-
-      ctx.fillStyle = "#0F1114";
-      ctx.fillRect(0, 0, width, height);
-
-      ctx.globalAlpha = 0.18;
-      ctx.fillStyle = "#8ca0ff";
-      ctx.beginPath();
-      ctx.ellipse(width * 0.32, 70, 320, 130, 0, 0, Math.PI * 2);
-      ctx.fill();
-      ctx.globalAlpha = 1;
-
-      ctx.fillStyle = "rgba(233,238,246,0.96)";
-      ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText("Delvee summary", padding, padding + 44);
-
-      const gen = (session?.summaryStats?.generatedAtUtc) || session?.summaryReadyAtUtc || new Date().toISOString();
-      ctx.fillStyle = "rgba(233,238,246,0.70)";
-      ctx.font = "500 14px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText(`Session ${sessionId} · Generated: ${gen}`, padding, padding + 72);
-
-      const maxTextW = width - padding * 2;
-      const textTop = padding + 92;
-      ctx.fillStyle = "rgba(233,238,246,0.88)";
-      ctx.font = "500 14px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, Liberation Mono, Courier New, monospace";
-
-      function wrapLines(text, maxW) {
-        const words = text.split(/\s+/).filter(Boolean);
-        const lines = [];
-        let line = "";
-        for (const w of words) {
-          const next = line ? (line + " " + w) : w;
-          if (ctx.measureText(next).width <= maxW) line = next;
-          else { if (line) lines.push(line); line = w; }
-        }
-        if (line) lines.push(line);
-        return lines;
-      }
-
-      const clipped = summary.length > 520 ? (summary.slice(0, 520) + "…") : summary;
-      const lines = wrapLines(clipped || "(no summary text)", maxTextW);
-      const maxLines = 4;
-      const used = lines.slice(0, maxLines);
-
-      let y = textTop;
-      for (const ln of used) { ctx.fillText(ln, padding, y); y += 18; }
-
-      const gridLeft = padding;
-      const gridTop = padding + headerH;
-
-      let idx = 0;
-      for (let r = 0; r < rows; r++) {
-        for (let c = 0; c < cols; c++) {
-          const x = gridLeft + c * (tile + gap);
-          const yy = gridTop + r * (tile + gap);
-
-          ctx.fillStyle = "rgba(255,255,255,0.06)";
-          roundRect(ctx, x, yy, tile, tile, 18);
-          ctx.fill();
-
-          const im = imgs[idx++];
-          if (!im) continue;
-
-          const { sx, sy, sw, sh } = coverSourceRect(im.width, im.height, tile, tile);
-
-          ctx.save();
-          roundRect(ctx, x, yy, tile, tile, 18);
-          ctx.clip();
-          ctx.drawImage(im, sx, sy, sw, sh, x, yy, tile, tile);
-          ctx.restore();
-
-          ctx.strokeStyle = "rgba(255,255,255,0.12)";
-          ctx.lineWidth = 1;
-          roundRect(ctx, x + 0.5, yy + 0.5, tile - 1, tile - 1, 18);
-          ctx.stroke();
-        }
-      }
-
-      ctx.fillStyle = "rgba(233,238,246,0.55)";
-      ctx.font = "500 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
-      ctx.fillText("Created in Delvee · Client-side collage prototype", padding, height - padding + 10);
-
-      return await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.92));
-    }
-
-    btnDownloadCollage?.addEventListener("click", async () => {
-      if (!session || !session.summaryText) return;
-      try {
-        btnDownloadCollage.disabled = true;
-        collageStatus.textContent = "Generating collage…";
-
-        const blob = await buildCollagePngBlob();
-        if (!blob) throw new Error("Could not generate PNG");
-
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement("a");
-        a.href = url;
-        a.download = `delvee_summary_${sessionId}.png`;
-        document.body.appendChild(a);
-        a.click();
-        a.remove();
-
-        setTimeout(() => URL.revokeObjectURL(url), 10_000);
-        collageStatus.textContent = "Collage downloaded.";
-      } catch (e) {
-        console.error(e);
-        collageStatus.textContent = "Couldn’t generate collage (some images may block canvas).";
-        setStatus("warn", "Collage failed", (e && e.message) ? e.message : "Try again.");
-      } finally {
-        const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
-        btnDownloadCollage.disabled = imgCount === 0;
-      }
-    });
-
-    // -------------------------
-    // State + countdown
-    // -------------------------
-    function getLocalCooldownEndsAtMillis() {
-      if (!session) return null;
-      const base = Number(session.endAtMillis || 0);
-      if (!base) return session.cooldownEndsAtMillis || null;
-
-      const localEnds = base + DV_COOLDOWN_MS;
-      const serverEnds = Number(session.cooldownEndsAtMillis || 0) || null;
-      if (!serverEnds) return localEnds;
-      return Math.min(serverEnds, localEnds) || localEnds;
-    }
-
-    function renderCountdown() {
-      if (!session) { countdownEl.textContent = ""; return; }
-      const now = Date.now();
-
-      if (state === "RUNNING" && !prepIsDone()) {
-        const left = Math.max(0, prepEndsAt - now);
-        countdownEl.textContent = `PREP · ${fmtMs(left)}`;
-        return;
-      }
-
-      if (state === "RUNNING" && session.endAtMillis) {
-        const left = session.endAtMillis - now;
-        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
-      } else if (state === "COOLDOWN") {
-        const ends = getLocalCooldownEndsAtMillis();
-        if (ends) {
-          const left = ends - now;
-          countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
-        } else {
-          countdownEl.textContent = "COOLDOWN";
-        }
-      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
-        const left = session.reservationExpiresAtMillis - now;
-        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
-      } else if (state === "DONE") {
-        countdownEl.textContent = "DONE";
-      } else {
-        countdownEl.textContent = state;
-      }
-    }
-
-    function renderState(nextState) {
-      state = nextState || "—";
-
-      const effectiveState = (state === "RUNNING" && !prepIsDone()) ? "PREP" : state;
-      statePill.textContent = effectiveState;
-
-      if (effectiveState === "LOBBY") {
-        hint.textContent = "Ready up. When everyone is ready, the host begins. Then: 3 minutes preparation.";
-      } else if (effectiveState === "PREP") {
-        hint.textContent = "Preparation (3 minutes). Queue images now — then the pulse window begins.";
-      } else if (effectiveState === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      } else if (effectiveState === "COOLDOWN") {
-        hint.textContent = "Cooldown (3 minutes). Ask who sent what. Summary is preparing.";
-      } else if (effectiveState === "DONE") {
-        hint.textContent = "Done. Summary is ready.";
-      } else if (effectiveState === "CANCELLED") {
-        hint.textContent = "This lobby expired before it started.";
-      } else {
-        hint.textContent = "—";
-      }
-
-      const showComposer = (state === "RUNNING" && prepIsDone());
-      setHidden(composer, !showComposer);
-
-      const chatOpen = (state === "COOLDOWN" || state === "DONE");
-      chatText.disabled = !chatOpen;
-      btnChat.disabled = !chatOpen;
-      chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
-
-      setHidden(btnStop, !(isHost && state === "RUNNING"));
-
-      refreshSetfeedUI();
-    }
-
-    // PREP trigger logic
-    function maybeStartPrepPhase() {
-      if (!session) return;
-      if (session.state !== "RUNNING") return;
-
-      if (prepIsDone()) return;
-      if (prepActive) return;
-
-      const startAt = Number(session.startAtMillis || 0) || Date.now();
-      const endsAt = startAt + DV_PREP_MS;
-
-      if (Date.now() >= endsAt) {
-        prepMarkDone();
-        setComposerLocked(false);
-        return;
-      }
-
-      prepLoad();
-      setStatus("good", "PREP", "Prepare your images.");
-      prepStart(endsAt);
+      await sendSummaryToSetfeed();
     }
 
     // -------------------------
-    // Guest join + boot
+    // ✅ Guest join: ensure some auth (anonymous) + ensure alias
     // -------------------------
     async function ensureAuthAndAlias() {
       let a = getAlias();
@@ -2631,25 +1477,25 @@
 
       if (auth.currentUser) return;
 
-      setStatus("good", "Joining as guest…", "No sign-in required for join links.");
+      setStatus("good", "Connecting…", "Signing in as guest…");
       try {
-        await auth.signInAnonymously();
+        await withTimeout(auth.signInAnonymously(), 9000, "Anonymous sign-in");
       } catch (e) {
-        throw new Error("Guest join is unavailable. Enable Anonymous Auth in Firebase or sign in on the home page.");
+        console.error("[anon] failed:", e);
+        throw new Error("Guest join failed. Allow storage/cookies for this site (disable shields/private mode) or sign in on home.");
       }
     }
 
-    // Init prep UI
-    document.getElementById("dvPrepMaxA").textContent = String(DV_PREP_MAX_IMAGES);
-    document.getElementById("dvPrepMaxB").textContent = String(DV_PREP_MAX_IMAGES);
-    prepLoad();
-
+    // -------------------------
+    // Boot: join + subscribe
+    // -------------------------
     let booted = false;
+
     async function boot() {
       if (booted) return;
-      booted = true;
-
       if (!sessionId) return;
+
+      booted = true;
 
       try {
         setStatus("good", "Connecting…", "Preparing your lobby session…");
@@ -2664,11 +1510,14 @@
       const myAlias = getAlias();
 
       try {
+        setStatus("good", "Connecting…", "Joining session…");
         const join = functions.httpsCallable("delveeJoinSession");
-        await join({ sessionId, alias: myAlias });
+        await withTimeout(join({ sessionId, alias: myAlias }), 12000, "Join session");
       } catch (e) {
         console.error(e);
         setStatus("warn", "Couldn’t join", (e && e.message) ? e.message : "Try again.");
+        // Allow retry without reload
+        booted = false;
         return;
       }
 
@@ -2681,27 +1530,18 @@
           session = d;
 
           const st = d.state || "—";
+
           isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
           setHidden(hostControls, !isHost);
 
-          if (st === "LOBBY") {
-            vaultShownForSession = false;
-            vaultAnimating = false;
-            prepStop();
-            prepOverlayHide();
-            prepClearDoneFlag();
-          }
-
           renderState(st);
-          maybeStartPrepPhase();
           renderCountdown();
           renderSummaryIfReady();
 
-          // ✅ auto-send hook
           maybeAutoSend().catch(() => {});
         }, (err) => {
           console.error(err);
-          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee participant reads.");
+          setStatus("warn", "Realtime blocked", "Check Firestore rules for Delvee session/participants reads.");
         })
       );
 
@@ -2725,7 +1565,6 @@
           const list = snap.docs.map(d => d.data());
           renderFeed(list);
           renderSummaryIfReady();
-          maybeAutoSend().catch(() => {});
         })
       );
 
@@ -2736,56 +1575,19 @@
         })
       );
 
-      setInterval(() => {
-        renderCountdown();
-        if (prepActive && session && session.state !== "RUNNING") {
-          prepStop();
-          prepOverlayHide();
-        }
-      }, 350);
+      setInterval(renderCountdown, 500);
     }
 
-    // Boot even if Auth state change never fires (some browsers / blocked storage).
-function bootKick(reason){
-  try { boot(); } catch (e) {
-    console.error("[boot] failed:", e);
-    setStatus("warn", "Lobby error", (e && e.message) ? e.message : "Boot failed.");
-  }
-}
+    // 🔒 Boot when auth state is ready
+    auth.onAuthStateChanged(() => boot());
 
-auth.onAuthStateChanged(() => bootKick("auth"));
-
-    // Immediate + load fallback (prevents “Preparing realtime lobby…” hang)
-    if (document.readyState === "loading") {
-      document.addEventListener("DOMContentLoaded", () => bootKick("dom"), { once: true });
-    } else {
-      bootKick("immediate");
-    }
-    window.addEventListener("load", () => bootKick("load"), { once: true });
-
-    // Surface silent script errors into the status pill
-    window.addEventListener("error", (ev) => {
-      console.error("[window.error]", ev?.error || ev?.message || ev);
-      setStatus("warn", "Script error", String(ev?.message || "Unknown error"));
-    });
-    window.addEventListener("unhandledrejection", (ev) => {
-      console.error("[unhandledrejection]", ev?.reason || ev);
-      setStatus("warn", "Promise error", String(ev?.reason?.message || ev?.reason || "Unknown rejection"));
-    });
+    // ✅ Also attempt a boot soon even if onAuthStateChanged never fires (some blocked-storage scenarios)
+    setTimeout(() => boot(), 250);
+    setTimeout(() => boot(), 1500);
 
     window.addEventListener("beforeunload", () => {
       for (const u of unsub) try { u(); } catch (_) {}
       unsub = [];
-    });
-
-    // ESC closes overlays
-    window.addEventListener("keydown", (e) => {
-      if (e.key === "Escape") {
-        if (guessBackdrop.classList.contains("show")) guessBackdrop.classList.remove("show");
-        if (dvPrepPickerBackdrop.classList.contains("show")) dvPrepPickerBackdrop.classList.remove("show");
-        if (dvSummaryVault.classList.contains("show")) vaultHide();
-        if (dvPrepOverlay.classList.contains("show")) prepOverlayHide();
-      }
     });
   </script>
 </body>
