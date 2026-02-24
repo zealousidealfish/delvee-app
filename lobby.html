@@ -2745,7 +2745,33 @@
       }, 350);
     }
 
-    auth.onAuthStateChanged(() => boot());
+    // Boot even if Auth state change never fires (some browsers / blocked storage).
+function bootKick(reason){
+  try { boot(); } catch (e) {
+    console.error("[boot] failed:", e);
+    setStatus("warn", "Lobby error", (e && e.message) ? e.message : "Boot failed.");
+  }
+}
+
+auth.onAuthStateChanged(() => bootKick("auth"));
+
+    // Immediate + load fallback (prevents “Preparing realtime lobby…” hang)
+    if (document.readyState === "loading") {
+      document.addEventListener("DOMContentLoaded", () => bootKick("dom"), { once: true });
+    } else {
+      bootKick("immediate");
+    }
+    window.addEventListener("load", () => bootKick("load"), { once: true });
+
+    // Surface silent script errors into the status pill
+    window.addEventListener("error", (ev) => {
+      console.error("[window.error]", ev?.error || ev?.message || ev);
+      setStatus("warn", "Script error", String(ev?.message || "Unknown error"));
+    });
+    window.addEventListener("unhandledrejection", (ev) => {
+      console.error("[unhandledrejection]", ev?.reason || ev);
+      setStatus("warn", "Promise error", String(ev?.reason?.message || ev?.reason || "Unknown rejection"));
+    });
 
     window.addEventListener("beforeunload", () => {
       for (const u of unsub) try { u(); } catch (_) {}
