@@ -124,7 +124,6 @@
   </script>
 
   <style>
-    /* Keep your existing local additions */
     .dv-summary {
       margin-top: 12px;
       border-radius: 14px;
@@ -201,17 +200,14 @@
     }
     .dv-file-clear:hover{ color: rgba(233,238,246,0.92); }
 
-    /* ✅ Slightly more space between duration dropdown and Start button */
     .dv-host{ display:flex; align-items:center; gap: 12px; }
 
-    /* ✅ “Close lobby” button emphasis */
     .dv-btn-danger{
       border-color: rgba(255,255,255,0.16);
       background: rgba(255,60,60,0.16);
     }
     .dv-btn-danger:hover{ background: rgba(255,60,60,0.22); }
 
-    /* ✅ Attribution modal */
     .dv-modal-backdrop{
       position: fixed;
       inset: 0;
@@ -251,9 +247,6 @@
       margin-top: 12px;
     }
 
-    /* ---------------------------------------------
-       ✅ Compact alias/message layout (matches screenshot vibe)
-       --------------------------------------------- */
     .dv-chat-msg{
       border-radius: 16px;
       border: 1px solid rgba(255,255,255,0.10);
@@ -273,9 +266,6 @@
       opacity: 0.92;
     }
 
-    /* ---------------------------------------------
-       ✅ Pulse cards: reduce vertical height + selected highlight
-       --------------------------------------------- */
     .dv-pulse{
       padding: 10px 12px !important;
       border-radius: 16px !important;
@@ -294,9 +284,7 @@
       background: rgba(140, 160, 255, 0.08);
     }
 
-    /* ---------------------------------------------
-       ✅ Prep Phase overlay
-       --------------------------------------------- */
+    /* Prep overlay */
     .dv-prep-overlay{
       position:fixed; inset:0; z-index:1000;
       background: rgba(0,0,0,0.86);
@@ -306,7 +294,6 @@
       padding: 18px;
     }
     .dv-prep-overlay.show{ display:flex; }
-
     .dv-prep-inner{
       width: min(980px, 100%);
       max-height: calc(100vh - 36px);
@@ -351,7 +338,6 @@
       font-weight: 800;
       letter-spacing: 0.5px;
     }
-
     .dv-prep-actions{
       display:flex;
       align-items:center;
@@ -364,7 +350,6 @@
       opacity: 0.8;
       white-space: nowrap;
     }
-
     .dv-prep-grid{
       border-top: 1px solid rgba(255,255,255,0.08);
       border-bottom: 1px solid rgba(255,255,255,0.08);
@@ -411,7 +396,6 @@
       padding: 6px 8px;
       cursor:pointer;
     }
-
     .dv-prep-foot{
       display:flex;
       align-items:center;
@@ -424,9 +408,7 @@
       line-height: 1.35;
     }
 
-    /* ---------------------------------------------
-       ✅ Summary vault reveal modal (ready / set / reveal)
-       --------------------------------------------- */
+    /* Summary vault */
     .dv-vault{
       position:fixed; inset:0; z-index:1100;
       background: rgba(0,0,0,0.78);
@@ -473,7 +455,6 @@
         radial-gradient(circle at 30% 30%, rgba(140,160,255,0.20), transparent 55%),
         radial-gradient(circle at 70% 60%, rgba(255,255,255,0.10), transparent 60%),
         linear-gradient(90deg, transparent, rgba(255,255,255,0.06), transparent);
-      filter: blur(0px);
       animation: dvVaultDrift 3.2s linear infinite;
       opacity: 0.85;
     }
@@ -495,25 +476,21 @@
       0%{ transform: translateY(10px); opacity: 0; }
       100%{ transform: translateY(0); opacity: 1; }
     }
-
     .dv-vault-content{
       display:none;
       padding: 14px;
     }
     .dv-vault-content.show{ display:block; }
-
     .dv-vault-scroll{
       max-height: calc(100vh - 210px);
       overflow:auto;
       padding-right: 6px;
     }
-
     .dv-vault-grid2{
       display:grid;
       grid-template-columns: 1fr;
       gap: 12px;
     }
-
     .dv-collage-row{
       display:flex;
       gap: 10px;
@@ -521,8 +498,6 @@
       align-items:center;
       margin-top: 10px;
     }
-
-    /* Small helper button */
     .dv-btn-secondary{
       background: rgba(255,255,255,0.06);
       border-color: rgba(255,255,255,0.14);
@@ -563,7 +538,7 @@
       </div>
 
       <div class="dv-layout">
-        <!-- Left: participants -->
+        <!-- Left -->
         <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -585,8 +560,6 @@
                 </select>
 
                 <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
-
-                <!-- ✅ Stop button during RUNNING (requires server callable delveeStopSession) -->
                 <button class="dv-btn hidden" id="btn-stop" type="button">Stop</button>
               </div>
             </div>
@@ -595,14 +568,16 @@
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- ✅ Account-based Setfeed delivery (preferred) + fallback to manual code -->
+            <!-- ✅ Setfeed delivery -->
             <div class="dv-summary" id="setfeedPanel">
               <h3>Setfeed summary delivery</h3>
 
               <div id="setfeedAccountBox" class="dv-muted2" style="margin-bottom:10px;">
-                Sign in with Google to send summaries to your account inbox automatically (web + app).
+                Auto-send (ON) fetches your Setfeed receive code(s) and delivers to your Inbox automatically.
+                Auto-send requires a real signed-in user (not guest/anonymous).
               </div>
 
+              <!-- Manual code box (shown when Auto-send is OFF) -->
               <div id="setfeedCodeBox">
                 <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
               </div>
@@ -612,9 +587,10 @@
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary" type="button" disabled>Send summary</button>
               </div>
 
-              <div class="dv-muted2" id="setfeedStatus">Tip: summary encrypts locally and sends to your inbox.</div>
+              <div class="dv-muted2" id="setfeedStatus">
+                Tip: Delvee re-encrypts images for your Setfeed code so they decrypt in Setfeed.
+              </div>
 
-              <!-- ✅ Close lobby (appears 2 minutes after summary generated) -->
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-danger hidden" id="btn-close-lobby" type="button">Close lobby</button>
               </div>
@@ -625,7 +601,7 @@
           </div>
         </aside>
 
-        <!-- Center: live feed + composer -->
+        <!-- Center -->
         <section class="dv-main">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -657,13 +633,10 @@
                 Fast, short, deliberate. Throttling is enforced.
               </div>
             </div>
-
-            <!-- ✅ Summary is NO LONGER shown at the bottom.
-                It appears in the vault modal overlay after the reveal animation. -->
           </div>
         </section>
 
-        <!-- Right: chat (cooldown/done only) -->
+        <!-- Right -->
         <aside class="dv-side">
           <div class="dv-panel">
             <div class="dv-panel-head">
@@ -688,7 +661,7 @@
     </section>
   </main>
 
-  <!-- ✅ Attribution modal -->
+  <!-- Attribution modal -->
   <div class="dv-modal-backdrop" id="guessBackdrop" role="dialog" aria-modal="true" aria-label="Choose sender">
     <div class="dv-modal">
       <h3>Who do you think sent this?</h3>
@@ -704,7 +677,7 @@
     </div>
   </div>
 
-  <!-- ✅ Prep Phase Overlay -->
+  <!-- Prep overlay -->
   <div class="dv-prep-overlay" id="dvPrepOverlay" role="dialog" aria-modal="true" aria-label="Preparation phase">
     <div class="dv-prep-inner">
       <div class="dv-prep-head">
@@ -745,7 +718,7 @@
     </div>
   </div>
 
-  <!-- ✅ “From prep queue” picker -->
+  <!-- Prep picker -->
   <div class="dv-modal-backdrop" id="dvPrepPickerBackdrop" role="dialog" aria-modal="true" aria-label="Prep queue picker">
     <div class="dv-modal" style="width:min(720px,100%);">
       <h3>Select a queued image</h3>
@@ -757,7 +730,7 @@
     </div>
   </div>
 
-  <!-- ✅ Summary Vault Modal -->
+  <!-- Summary vault -->
   <div class="dv-vault" id="dvSummaryVault" role="dialog" aria-modal="true" aria-label="Session summary">
     <div class="dv-vault-inner">
       <div class="dv-vault-topbar">
@@ -768,12 +741,10 @@
         </div>
       </div>
 
-      <!-- Reveal stage -->
       <div class="dv-vault-stage" id="dvVaultStage">
         <div class="dv-vault-word" id="dvVaultWord">ready.</div>
       </div>
 
-      <!-- Content -->
       <div class="dv-vault-content" id="dvVaultContent">
         <div class="dv-vault-scroll">
           <div class="dv-vault-grid2">
@@ -805,7 +776,7 @@
 
   <script>
     // -------------------------
-    // Utilities
+    // Utilities / IDs
     // -------------------------
     const qs = new URLSearchParams(window.location.search);
     const sessionId = (qs.get("session") || "").trim().toUpperCase();
@@ -815,15 +786,12 @@
 
     const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
-
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
 
-    // ✅ Predictions storage (per session)
-    const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
+    const PRED_KEY = `dv_predictions_${sessionId}`;
 
-    // ✅ Frontend-only: PREP + cooldown overrides
-    const DV_PREP_MS = 3 * 60 * 1000;     // 3 minutes
-    const DV_COOLDOWN_MS = 3 * 60 * 1000; // 3 minutes (frontend display/prototype)
+    const DV_PREP_MS = 3 * 60 * 1000;
+    const DV_COOLDOWN_MS = 3 * 60 * 1000;
     const DV_PREP_MAX_IMAGES = 20;
 
     const PREP_DONE_KEY = `dv_prep_done_${sessionId}`;
@@ -835,7 +803,6 @@
     function setAlias(a) {
       try { localStorage.setItem(ALIAS_KEY, String(a || "").trim()); } catch (_) {}
     }
-
     function setLastSession(sid) {
       try { localStorage.setItem(LAST_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
     }
@@ -862,13 +829,6 @@
       return `${prefix}_${Date.now()}_${Math.random().toString(16).slice(2)}`;
     }
 
-    function escapeHtml(s) {
-      return String(s || "")
-        .replaceAll("&", "&amp;")
-        .replaceAll("<", "&lt;")
-        .replaceAll(">", "&gt;");
-    }
-
     function setHidden(el, hidden) {
       if (!el) return;
       el.classList.toggle("hidden", !!hidden);
@@ -879,7 +839,6 @@
       const prov = (u.providerData || []).map(p => p && p.providerId).filter(Boolean);
       return prov.includes("google.com");
     }
-
     function isAnon(u){
       return !!(u && u.isAnonymous);
     }
@@ -1011,32 +970,23 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
-    // ✅ Cache participants for alias lookup + scoring
-    let participantsCache = []; // [{uid, alias, aliasLower, ...}]
+    let participantsCache = [];
     let aliasByUid = new Map();
+    let pulsesCache = [];
 
-    // ✅ Cache pulses for rich summary + scoring
-    let pulsesCache = []; // latest-first
-
-    // ✅ Close-lobby timer
     let closeLobbyTimer = null;
-
-    // ✅ Guess modal state
     let currentGuessPulseId = null;
-
-    // ✅ Selected pulse highlight
     let selectedPulseId = null;
 
-    // ✅ PREP phase state
+    // PREP
     let prepActive = false;
     let prepEndsAt = 0;
     let prepTick = null;
 
-    // ✅ Prep image queue (localStorage)
     let prepImages = []; // [{id,name,type,dataUrl}]
     let selectedPrepImage = null; // {id,name,type,dataUrl}
 
-    // ✅ Summary vault state
+    // Vault
     let vaultShownForSession = false;
     let vaultAnimating = false;
 
@@ -1047,7 +997,6 @@
       const f = (pulseImage && pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
       if (!chipLabel) return;
 
-      // If a prep image is selected, show that instead
       if (selectedPrepImage) {
         chipLabel.innerHTML = "";
         const name = document.createElement("span");
@@ -1099,7 +1048,6 @@
 
     if (btnChooseImage && pulseImage) {
       btnChooseImage.addEventListener("click", () => {
-        // Selecting file overrides prep selection
         selectedPrepImage = null;
         pulseImage.click();
       });
@@ -1209,7 +1157,6 @@
         remove.textContent = "Remove";
         remove.addEventListener("click", () => {
           prepImages = prepImages.filter(x => x.id !== img.id);
-          // if currently selected, clear selection
           if (selectedPrepImage && selectedPrepImage.id === img.id) {
             selectedPrepImage = null;
             renderChosenFileName();
@@ -1229,12 +1176,8 @@
       dvPrepGrid.appendChild(frag);
     }
 
-    function prepOverlayShow() {
-      dvPrepOverlay?.classList.add("show");
-    }
-    function prepOverlayHide() {
-      dvPrepOverlay?.classList.remove("show");
-    }
+    function prepOverlayShow() { dvPrepOverlay?.classList.add("show"); }
+    function prepOverlayHide() { dvPrepOverlay?.classList.remove("show"); }
 
     function prepStart(endsAtMillis) {
       prepActive = true;
@@ -1269,9 +1212,7 @@
       }
     }
 
-    // -------------------------
-    // “From prep queue” picker
-    // -------------------------
+    // Prep picker
     function prepPickerShow() {
       if (!dvPrepPickerBackdrop || !dvPrepPickerGrid) return;
       dvPrepPickerGrid.innerHTML = "";
@@ -1305,7 +1246,6 @@
 
           tile.addEventListener("click", () => {
             selectedPrepImage = img;
-            // Clear normal file input selection so we don't have ambiguity
             if (pulseImage) pulseImage.value = "";
             renderChosenFileName();
             dvPrepPickerBackdrop.classList.remove("show");
@@ -1318,9 +1258,7 @@
       dvPrepPickerBackdrop.classList.add("show");
     }
 
-    function prepPickerHide() {
-      dvPrepPickerBackdrop?.classList.remove("show");
-    }
+    function prepPickerHide() { dvPrepPickerBackdrop?.classList.remove("show"); }
 
     dvPrepPickerClose?.addEventListener("click", prepPickerHide);
     dvPrepPickerBackdrop?.addEventListener("click", (e) => {
@@ -1363,11 +1301,8 @@
 
     dvPrepClose?.addEventListener("click", () => prepOverlayHide());
 
-    // -------------------------
     // Composer lock for PREP
-    // -------------------------
     function setComposerLocked(locked) {
-      // During prep, we visually keep it off + block actions
       setHidden(composer, !!locked);
       if (locked) {
         composerHelp.textContent = "Preparation phase — queue your images.";
@@ -1375,16 +1310,20 @@
     }
 
     // -------------------------
-    // Setfeed helpers (manual-code fallback)
+    // ✅ Setfeed autosend + E2E encryption (matches setfeed/send.html)
     // -------------------------
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
     function bytesToB64(bytes) {
-      let bin = "";
+      let binary = "";
+      const chunk = 0x8000;
       const arr = (bytes instanceof Uint8Array) ? bytes : new Uint8Array(bytes);
-      for (let i = 0; i < arr.length; i++) bin += String.fromCharCode(arr[i]);
-      return btoa(bin);
+      for (let i = 0; i < arr.length; i += chunk) {
+        binary += String.fromCharCode(...arr.subarray(i, i + chunk));
+      }
+      return btoa(binary);
     }
+    function abToB64(ab) { return bytesToB64(new Uint8Array(ab)); }
 
     async function sha256Hex(str) {
       const data = new TextEncoder().encode(str);
@@ -1404,19 +1343,32 @@
       );
     }
 
-    async function encryptForCode(rawCode, plaintext) {
+    async function encryptBodyForCode(rawCode, plaintext) {
       const passphrase = normalizeCodeAndroid(rawCode);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveAesKeyFromPassphrase(passphrase, salt);
-
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
-
       return {
-        ciphertextB64: bytesToB64(new Uint8Array(ct)),
+        ciphertextB64: abToB64(ct),
         ivB64: bytesToB64(iv),
         saltB64: bytesToB64(salt),
+        normalizedPassphrase: passphrase
+      };
+    }
+
+    async function encryptBytesForCode(rawCode, bytesUint8) {
+      const passphrase = normalizeCodeAndroid(rawCode);
+      const salt = crypto.getRandomValues(new Uint8Array(16));
+      const iv = crypto.getRandomValues(new Uint8Array(12));
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
+      const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytesUint8);
+      return {
+        ciphertextBytes: new Uint8Array(ct),
+        ivB64: bytesToB64(iv),
+        saltB64: bytesToB64(salt),
+        normalizedPassphrase: passphrase
       };
     }
 
@@ -1445,58 +1397,162 @@
       try { localStorage.setItem(SENT_FLAG_KEY, "true"); } catch (_) {}
     }
 
-    function refreshSetfeedUI() {
-      const auto = getAutosend();
-      btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
-
+    // ✅ Fetch user’s Setfeed receive codes (required backend)
+    async function fetchUserSetfeedReceiveCode() {
       const u = auth.currentUser;
-      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
+      if (!u || isAnon(u)) throw new Error("Auto-send requires a signed-in user (not guest).");
 
-      setHidden(setfeedAccountBox, !canAccountSend);
-      setHidden(setfeedCodeBox, canAccountSend);
+      const call = functions.httpsCallable("getSetfeedReceiveCodesForUser");
+      const res = await call({});
+      const data = (res && res.data) ? res.data : {};
 
-      const code = (setfeedCodeInput.value || "").trim();
-      const hasSummary = !!(session && session.summaryText);
-      const canSend =
-        (state === "DONE" && hasSummary) &&
-        (canAccountSend || !!code);
+      const codes =
+        (Array.isArray(data.codes) && data.codes) ||
+        (Array.isArray(data.receiveCodes) && data.receiveCodes) ||
+        (Array.isArray(data.setfeedReceiveCodes) && data.setfeedReceiveCodes) ||
+        [];
 
-      btnSendSummary.disabled = !canSend;
-      btnSendSummary2.disabled = !canSend;
+      const primary =
+        (typeof data.primaryCode === "string" && data.primaryCode) ||
+        (typeof data.primaryReceiveCode === "string" && data.primaryReceiveCode) ||
+        (typeof data.defaultCode === "string" && data.defaultCode) ||
+        "";
 
-      if (hasSentForThisSession()) {
-        setfeedStatus.textContent = "Summary sent for this session.";
-        return;
+      const all = [];
+      if (primary) all.push(primary);
+      for (const c of codes) if (c && !all.includes(c)) all.push(c);
+
+      const norm = all.map(x => String(x || "").trim()).filter(Boolean);
+
+      // Prefer Secure codes if present
+      const sfs = norm.find(c => /^SFS/i.test(c.replace(/\s+/g, "")));
+      if (sfs) return sfs;
+
+      const sf = norm.find(c => /^SF/i.test(c.replace(/\s+/g, "")));
+      if (sf) return sf;
+
+      if (norm.length) return norm[0];
+
+      throw new Error("No Setfeed receive codes found for this user.");
+    }
+
+    async function putBytesToSignedUrl(uploadUrl, bytesUint8) {
+      const res = await fetch(uploadUrl, {
+        method: "PUT",
+        headers: { "Content-Type": "application/octet-stream" },
+        body: bytesUint8
+      });
+      if (!res.ok) {
+        const txt = await res.text().catch(() => "");
+        throw new Error(`Upload failed (${res.status}) ${txt}`.trim());
+      }
+    }
+
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await call({ sessionId, storagePath });
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
+    async function fetchBytes(url) {
+      const r = await fetch(url);
+      if (!r.ok) throw new Error(`Download failed (${r.status})`);
+      const ab = await r.arrayBuffer();
+      return new Uint8Array(ab);
+    }
+
+    function buildSetfeedSummaryText() {
+      // Keep it simple and stable: Setfeed renders body + attachments separately.
+      const base = String(session?.summaryText || "").trim();
+      const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
+
+      const header = `Delvee session ${sessionId}`;
+      const footer = imgCount ? `\n\nImages attached: ${imgCount}` : "";
+      return `${header}\n\n${base || "(no summary text)"}${footer}`;
+    }
+
+    async function sendSummaryToSetfeedResolvedCode(receiveCode) {
+      if (!auth.currentUser) throw new Error("Not signed in.");
+
+      if (!session || !session.summaryText) throw new Error("Summary not ready yet.");
+      if (hasSentForThisSession()) return;
+
+      const codeRaw = String(receiveCode || "").trim();
+      if (!codeRaw) throw new Error("Missing Setfeed receive code.");
+
+      // 1) Encrypt summary body for the Setfeed receive code
+      const bodyPlain = buildSetfeedSummaryText();
+      const encMsg = await encryptBodyForCode(codeRaw, bodyPlain);
+      const codeHash = await sha256Hex(encMsg.normalizedPassphrase);
+
+      // 2) Gather Delvee images -> download bytes -> encrypt for Setfeed code -> upload to Setfeed signed attachment path
+      const imagePulses = (pulsesCache || [])
+        .filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath);
+
+      const attachments = [];
+      for (const p of imagePulses) {
+        const srcPath = p.attachment.storagePath;
+        const contentType = p.attachment.contentType || "image/*";
+
+        const dl = await getDownloadUrl(srcPath);
+        if (!dl) continue;
+
+        const plainBytes = await fetchBytes(dl);
+
+        const enc = await encryptBytesForCode(codeRaw, plainBytes);
+
+        const attachmentId = randomId("dvimg");
+        const callUpload = functions.httpsCallable("createSignedAttachmentUpload");
+        const up = await callUpload({
+          attachmentId,
+          contentType,
+          sizeBytes: enc.ciphertextBytes.length
+        });
+
+        const upData = up && up.data ? up.data : {};
+        const uploadUrl = upData.uploadUrl;
+        const storagePath = upData.storagePath;
+        if (!uploadUrl || !storagePath) throw new Error("Upload URL missing (createSignedAttachmentUpload).");
+
+        await putBytesToSignedUrl(uploadUrl, enc.ciphertextBytes);
+
+        attachments.push({
+          attachmentId,
+          storagePath,
+          contentType,
+          sizeBytes: enc.ciphertextBytes.length,
+          ivB64: enc.ivB64,
+          saltB64: enc.saltB64
+        });
       }
 
-      if (state !== "DONE") {
-        setfeedStatus.textContent = "Summary sends when the session is DONE.";
-        return;
-      }
+      // 3) Send one Setfeed envelope w/ attachments
+      const deliverAtLocalIso = new Date().toISOString(); // immediate
+      const callable = functions.httpsCallable("sendSignedCiphertext");
 
-      if (!hasSummary) {
-        setfeedStatus.textContent = "Waiting for summary generation…";
-        return;
-      }
+      await callable({
+        codeHash,
+        ciphertext: encMsg.ciphertextB64,
+        iv: encMsg.ivB64,
+        salt: encMsg.saltB64,
+        deliverAtLocalIso,
+        userTimezone: tzName(),
+        clientRequestId: randomId("dvsum"),
+        attachments
+      });
 
-      if (canAccountSend) {
-        setfeedStatus.textContent =
-          auto
-            ? "Auto-send is ON: will send once per session (account inbox)."
-            : "Ready to send (account inbox).";
-      } else {
-        setfeedStatus.textContent =
-          code
-            ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
-            : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
-      }
+      markSentForThisSession();
     }
 
     async function sendSummaryToSetfeed() {
       if (!auth.currentUser) return;
-
-      const u = auth.currentUser;
-      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
 
       if (!session || !session.summaryText) {
         setStatus("warn", "No summary", "Summary not ready yet.");
@@ -1510,68 +1566,125 @@
 
       btnSendSummary.disabled = true;
       btnSendSummary2.disabled = true;
+      btnToggleAutosend.disabled = true;
 
       try {
-        if (canAccountSend) {
-          setfeedStatus.textContent = "Sending to account inbox…";
-          const call = functions.httpsCallable("delveeSendSummaryToSetfeed");
-          await call({ sessionId });
+        const auto = getAutosend();
 
-          markSentForThisSession();
-          setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
-          setStatus("good", "Sent", "Summary delivered to your account inbox.");
-          return;
+        let codeToUse = "";
+        if (auto) {
+          setfeedStatus.textContent = "Auto-send ON: fetching your Setfeed receive code…";
+          codeToUse = await fetchUserSetfeedReceiveCode();
+          setfeedStatus.textContent = "Encrypting + sending to your Setfeed Inbox…";
+        } else {
+          codeToUse = (setfeedCodeInput.value || "").trim();
+          if (!codeToUse) {
+            setStatus("warn", "Missing code", "Paste your Setfeed receive code first (or enable Auto-send).");
+            return;
+          }
+          setfeedStatus.textContent = "Encrypting + sending…";
         }
 
-        const codeRaw = (setfeedCodeInput.value || "").trim();
-        if (!codeRaw) {
-          setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
-          return;
-        }
+        await sendSummaryToSetfeedResolvedCode(codeToUse);
 
-        setfeedStatus.textContent = "Encrypting + sending…";
-
-        const normalized = normalizeCodeAndroid(codeRaw);
-        const codeHash = await sha256Hex(normalized);
-
-        const enc = await encryptForCode(codeRaw, session.summaryText);
-
-        const deliverAtLocalIso = new Date().toISOString();
-        const call = functions.httpsCallable("sendSignedCiphertext");
-
-        await call({
-          codeHash,
-          ciphertext: enc.ciphertextB64,
-          iv: enc.ivB64,
-          salt: enc.saltB64,
-          deliverAtLocalIso,
-          userTimezone: tzName(),
-          clientRequestId: randomId("sum"),
-          attachments: [],
-        });
-
-        markSentForThisSession();
-        setfeedStatus.textContent = "Sent — check your Setfeed Inbox.";
-        setStatus("good", "Sent", "Summary delivered to your Setfeed Inbox.");
+        setfeedStatus.textContent = "Sent — check your Setfeed Inbox (web + app).";
+        setStatus("good", "Sent", "Summary delivered to Setfeed (with decryptable images).";
       } catch (e) {
         console.error(e);
         const msg = (e && e.message) ? e.message : "Try again.";
-        setfeedStatus.textContent =
-          canAccountSend
-            ? "Couldn’t send to account inbox. (You may need to deploy delveeSendSummaryToSetfeed.)"
-            : "Couldn’t send. Check the code is valid and try again.";
+        setfeedStatus.textContent = "Couldn’t send. Verify functions are deployed and try again.";
         setStatus("warn", "Send failed", msg);
       } finally {
+        btnToggleAutosend.disabled = false;
         refreshSetfeedUI();
       }
     }
 
+    async function maybeAutoSend() {
+      if (!getAutosend()) return;
+      if (hasSentForThisSession()) return;
+
+      // Only when DONE and summary exists
+      if (!(state === "DONE" && session && session.summaryText)) return;
+
+      // Auto-send requires real user (not guest)
+      const u = auth.currentUser;
+      if (!u || isAnon(u)) return;
+
+      await sendSummaryToSetfeed();
+    }
+
+    function refreshSetfeedUI() {
+      const auto = getAutosend();
+      btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
+
+      // ✅ Requirement: when Auto-send is OFF => show receive code input.
+      // When Auto-send is ON => hide manual code input (we fetch codes for the user).
+      setHidden(setfeedCodeBox, auto);
+
+      const u = auth.currentUser;
+      const authed = !!u;
+      const canAuto = authed && !isAnon(u);
+
+      // Help text
+      if (!authed) {
+        setfeedAccountBox.textContent =
+          "Sign in to Delvee to send to Setfeed. (Auto-send also requires a real signed-in user.)";
+      } else if (isAnon(u)) {
+        setfeedAccountBox.textContent =
+          "You joined as guest. Auto-send is unavailable for guest sessions. Turn Auto-send OFF and paste a Setfeed receive code.";
+      } else {
+        setfeedAccountBox.textContent =
+          "Auto-send (ON) fetches your Setfeed receive code(s) and delivers to your Inbox automatically.";
+      }
+
+      // If auto is ON but user is guest, we keep it ON visually but warn + disable send
+      const hasSummary = !!(session && session.summaryText);
+      const codeOk = !!(setfeedCodeInput.value || "").trim();
+
+      const canSendManual = authed && hasSummary && (state === "DONE") && codeOk;
+      const canSendAuto = authed && hasSummary && (state === "DONE") && canAuto;
+
+      const canSend = auto ? canSendAuto : canSendManual;
+
+      btnSendSummary.disabled = !canSend || hasSentForThisSession();
+      btnSendSummary2.disabled = !canSend || hasSentForThisSession();
+
+      if (hasSentForThisSession()) {
+        setfeedStatus.textContent = "Summary sent for this session.";
+        return;
+      }
+
+      if (!authed) {
+        setfeedStatus.textContent = "Sign in to send the summary to Setfeed.";
+        return;
+      }
+
+      if (state !== "DONE") {
+        setfeedStatus.textContent = "Summary sends when the session is DONE.";
+        return;
+      }
+
+      if (!hasSummary) {
+        setfeedStatus.textContent = "Waiting for summary generation…";
+        return;
+      }
+
+      if (auto) {
+        setfeedStatus.textContent = canAuto
+          ? "Auto-send is ON: will send once per session (fetching your receive code)."
+          : "Auto-send is ON, but unavailable for guest sessions. Turn it OFF to paste a code.";
+      } else {
+        setfeedStatus.textContent = codeOk
+          ? "Auto-send is OFF: ready to send using the pasted Setfeed receive code."
+          : "Auto-send is OFF: paste your Setfeed receive code to send.";
+      }
+    }
+
     // -------------------------
-    // Actions
+    // Actions (top)
     // -------------------------
-    btnHome.addEventListener("click", () => {
-      window.location.href = "./index.html";
-    });
+    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -1590,9 +1703,9 @@
       window.location.href = "./index.html";
     });
 
+    // Ready
     btnReady.addEventListener("click", async () => {
       if (!auth.currentUser) return;
-
       const next = !(me && me.ready);
       try {
         btnReady.disabled = true;
@@ -1606,11 +1719,11 @@
       }
     });
 
+    // Start
     btnStart.addEventListener("click", async () => {
       if (!isHost) return;
       try {
         btnStart.disabled = true;
-        // Frontend-only PREP: we reset prep done flag on fresh start
         prepClearDoneFlag();
         const call = functions.httpsCallable("delveeStartSession");
         await call({ sessionId, durationMinutes: Number(durationSel.value) });
@@ -1622,7 +1735,7 @@
       }
     });
 
-    // ✅ Stop RUNNING early -> COOLDOWN (requires backend callable delveeStopSession)
+    // Stop
     btnStop.addEventListener("click", async () => {
       if (!isHost) return;
       if (state !== "RUNNING") return;
@@ -1638,6 +1751,9 @@
       }
     });
 
+    // -------------------------
+    // Pulse actions
+    // -------------------------
     btnPulse.addEventListener("click", async () => {
       const text = pulseText.value.trim();
       if (!text) return;
@@ -1699,7 +1815,6 @@
         return;
       }
 
-      // Either normal file input OR selected prep image
       const file = (pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
       const usePrep = !!selectedPrepImage;
 
@@ -1753,16 +1868,11 @@
         await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: {
-            storagePath,
-            contentType,
-            sizeBytes
-          }
+          attachment: { storagePath, contentType, sizeBytes }
         });
 
         pendingImagePulse = null;
 
-        // If it was from prep queue: remove it from queue so “queued for sending” feels real
         if (usePrep && selectedPrepImage) {
           const usedId = selectedPrepImage.id;
           selectedPrepImage = null;
@@ -1782,6 +1892,7 @@
       }
     });
 
+    // Chat
     btnChat.addEventListener("click", async () => {
       const text = chatText.value.trim();
       if (!text) return;
@@ -1804,7 +1915,7 @@
       }
     });
 
-    // ✅ Enter to send (Pulse + Chat)
+    // Enter shortcuts
     pulseText.addEventListener("keydown", (e) => {
       if (e.key === "Enter" && !e.shiftKey) {
         e.preventDefault();
@@ -1818,7 +1929,9 @@
       }
     });
 
-    // Setfeed controls
+    // -------------------------
+    // Setfeed UI wiring
+    // -------------------------
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
@@ -1826,8 +1939,10 @@
     });
 
     btnToggleAutosend.addEventListener("click", () => {
-      setAutosend(!getAutosend());
+      const next = !getAutosend();
+      setAutosend(next);
       refreshSetfeedUI();
+      // If user just turned it on and we already have DONE+summary, attempt autosend immediately
       maybeAutoSend().catch(() => {});
     });
 
@@ -1854,12 +1969,33 @@
     // -------------------------
     // Guess modal
     // -------------------------
+    function rebuildAliasMap(list){
+      aliasByUid = new Map();
+      for (const p of list) {
+        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
+      }
+    }
+
+    function summarizePulsePreview(it){
+      if (!it) return "—";
+      if (it.kind === "image") return "image pulse";
+      const t = String(it.text || "").trim();
+      return t.length > 140 ? (t.slice(0, 139) + "…") : (t || "[empty]");
+    }
+
+    function updateFeedSelectionHighlight() {
+      const nodes = feed.querySelectorAll("[data-pulse-id]");
+      nodes.forEach(n => {
+        const pid = n.getAttribute("data-pulse-id");
+        n.classList.toggle("selected", !!selectedPulseId && pid === selectedPulseId);
+      });
+    }
+
     function modalShowGuess(pulseId, previewText){
       currentGuessPulseId = pulseId;
       selectedPulseId = pulseId;
       guessPreview.textContent = previewText || "—";
 
-      // Update selected highlight in feed
       updateFeedSelectionHighlight();
 
       const preds = loadPredictions();
@@ -1874,9 +2010,7 @@
         b.type = "button";
         b.className = "dv-btn";
         b.textContent = p.alias || "—";
-        if (existing && existing.guessedUid === p.uid) {
-          b.classList.add("dv-btn-primary");
-        }
+        if (existing && existing.guessedUid === p.uid) b.classList.add("dv-btn-primary");
         b.addEventListener("click", () => {
           const next = loadPredictions();
           next[pulseId] = { guessedUid: p.uid, guessedAlias: p.alias || null };
@@ -1912,112 +2046,6 @@
     // -------------------------
     // Realtime rendering
     // -------------------------
-    function renderState(nextState) {
-      state = nextState || "—";
-
-      // When server says RUNNING, we show PREP locally first (3 minutes)
-      const effectiveState = (state === "RUNNING" && !prepIsDone()) ? "PREP" : state;
-      statePill.textContent = effectiveState;
-
-      if (effectiveState === "LOBBY") {
-        hint.textContent = "Ready up. When everyone is ready, the host begins. Then: 3 minutes preparation.";
-      } else if (effectiveState === "PREP") {
-        hint.textContent = "Preparation (3 minutes). Queue images now — then the pulse window begins.";
-      } else if (effectiveState === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      } else if (effectiveState === "COOLDOWN") {
-        hint.textContent = "Cooldown (3 minutes). Ask who sent what. Summary is preparing.";
-      } else if (effectiveState === "DONE") {
-        hint.textContent = "Done. Summary is ready.";
-      } else if (effectiveState === "CANCELLED") {
-        hint.textContent = "This lobby expired before it started.";
-      } else {
-        hint.textContent = "—";
-      }
-
-      // Composer is shown only in RUNNING AND when prep done
-      const showComposer = (state === "RUNNING" && prepIsDone());
-      setHidden(composer, !showComposer);
-
-      const chatOpen = (state === "COOLDOWN" || state === "DONE");
-      chatText.disabled = !chatOpen;
-      btnChat.disabled = !chatOpen;
-      chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
-
-      // Stop button: host + RUNNING only (server)
-      setHidden(btnStop, !(isHost && state === "RUNNING"));
-
-      refreshSetfeedUI();
-    }
-
-    function getLocalCooldownEndsAtMillis() {
-      // Frontend-only cooldown override (3 minutes).
-      // Prefer session.cooldownEndsAtMillis if it exists and is earlier; otherwise clamp to endAt + 3 min.
-      if (!session) return null;
-      const base = Number(session.endAtMillis || 0);
-      if (!base) return session.cooldownEndsAtMillis || null;
-
-      const localEnds = base + DV_COOLDOWN_MS;
-      const serverEnds = Number(session.cooldownEndsAtMillis || 0) || null;
-      if (!serverEnds) return localEnds;
-
-      // If server ends sooner (unlikely), use it; otherwise show local 3-min target.
-      return Math.min(serverEnds, localEnds) || localEnds;
-    }
-
-    function renderCountdown() {
-      if (!session) { countdownEl.textContent = ""; return; }
-
-      const now = Date.now();
-
-      if (state === "RUNNING" && !prepIsDone()) {
-        // Show PREP timer
-        const left = Math.max(0, prepEndsAt - now);
-        countdownEl.textContent = `PREP · ${fmtMs(left)}`;
-        return;
-      }
-
-      if (state === "RUNNING" && session.endAtMillis) {
-        const left = session.endAtMillis - now;
-        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
-      } else if (state === "COOLDOWN") {
-        const ends = getLocalCooldownEndsAtMillis();
-        if (ends) {
-          const left = ends - now;
-          countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
-        } else {
-          countdownEl.textContent = "COOLDOWN";
-        }
-      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
-        const left = session.reservationExpiresAtMillis - now;
-        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
-      } else if (state === "DONE") {
-        countdownEl.textContent = "DONE";
-      } else {
-        countdownEl.textContent = state;
-      }
-    }
-
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
-    function rebuildAliasMap(list){
-      aliasByUid = new Map();
-      for (const p of list) {
-        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
-      }
-    }
-
     function renderParticipants(list) {
       participantsCache = Array.isArray(list) ? list : [];
       participantsCache.sort((a,b) => String(a.aliasLower||"").localeCompare(String(b.aliasLower||"")));
@@ -2064,21 +2092,6 @@
       participantsEl.appendChild(frag);
 
       renderSummaryIfReady();
-    }
-
-    function summarizePulsePreview(it){
-      if (!it) return "—";
-      if (it.kind === "image") return "image pulse";
-      const t = String(it.text || "").trim();
-      return t.length > 140 ? (t.slice(0, 139) + "…") : (t || "[empty]");
-    }
-
-    function updateFeedSelectionHighlight() {
-      const nodes = feed.querySelectorAll("[data-pulse-id]");
-      nodes.forEach(n => {
-        const pid = n.getAttribute("data-pulse-id");
-        n.classList.toggle("selected", !!selectedPulseId && pid === selectedPulseId);
-      });
     }
 
     async function renderFeed(items) {
@@ -2240,15 +2253,9 @@
       }, delay);
     }
 
-    // -------------------------
-    // ✅ Summary vault reveal
-    // -------------------------
-    function vaultShow() {
-      dvSummaryVault?.classList.add("show");
-    }
-    function vaultHide() {
-      dvSummaryVault?.classList.remove("show");
-    }
+    // Vault
+    function vaultShow() { dvSummaryVault?.classList.add("show"); }
+    function vaultHide() { dvSummaryVault?.classList.remove("show"); }
 
     dvVaultClose?.addEventListener("click", vaultHide);
     dvSummaryVault?.addEventListener("click", (e) => {
@@ -2266,7 +2273,6 @@
       const steps = ["ready.", "set.", "reveal."];
       for (let i = 0; i < steps.length; i++) {
         dvVaultWord.textContent = steps[i];
-        // small “pop” retrigger
         dvVaultWord.style.animation = "none";
         // eslint-disable-next-line no-unused-expressions
         dvVaultWord.offsetHeight;
@@ -2274,7 +2280,6 @@
         await new Promise(r => setTimeout(r, 700));
       }
 
-      // Brief beat then show content
       await new Promise(r => setTimeout(r, 350));
 
       dvVaultStage.style.display = "none";
@@ -2302,14 +2307,12 @@
 
         summaryByAliasEl.textContent = buildSummaryByAlias();
 
-        // Enable collage button if there are any images
         const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
         btnDownloadCollage.disabled = imgCount === 0;
         collageStatus.textContent = imgCount
           ? `Collage will include summary text + ${imgCount} image${imgCount === 1 ? "" : "s"}.`
           : "No images in this session to collage.";
 
-        // Show vault once per DONE summary availability
         if (!vaultShownForSession) {
           vaultShownForSession = true;
           vaultRunRevealThenShowContent().catch(() => {});
@@ -2321,7 +2324,7 @@
     }
 
     // -------------------------
-    // ✅ Collage download (client-side)
+    // Collage download (unchanged)
     // -------------------------
     function loadImage(url) {
       return new Promise((resolve) => {
@@ -2333,12 +2336,42 @@
       });
     }
 
+    function roundRect(ctx, x, y, w, h, r) {
+      const rr = Math.min(r, w / 2, h / 2);
+      ctx.beginPath();
+      ctx.moveTo(x + rr, y);
+      ctx.arcTo(x + w, y, x + w, y + h, rr);
+      ctx.arcTo(x + w, y + h, x, y + h, rr);
+      ctx.arcTo(x, y + h, x, y, rr);
+      ctx.arcTo(x, y, x + w, y, rr);
+      ctx.closePath();
+    }
+
+    function coverSourceRect(srcW, srcH, dstW, dstH) {
+      const srcAR = srcW / srcH;
+      const dstAR = dstW / dstH;
+      let sw = srcW, sh = srcH, sx = 0, sy = 0;
+
+      if (srcAR > dstAR) {
+        sh = srcH;
+        sw = Math.floor(srcH * dstAR);
+        sx = Math.floor((srcW - sw) / 2);
+        sy = 0;
+      } else {
+        sw = srcW;
+        sh = Math.floor(srcW / dstAR);
+        sx = 0;
+        sy = Math.floor((srcH - sh) / 2);
+      }
+      return { sx, sy, sw, sh };
+    }
+
     async function buildCollagePngBlob() {
       const summary = String(session?.summaryText || "").trim();
       const imagePulses = (pulsesCache || [])
         .filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath)
         .slice()
-        .reverse(); // oldest-first looks nicer for collage
+        .reverse();
 
       const urls = [];
       for (const p of imagePulses) {
@@ -2350,7 +2383,6 @@
 
       const imgs = (await Promise.all(urls.map(loadImage))).filter(Boolean);
 
-      // Layout config
       const padding = 36;
       const headerH = 160;
       const footerH = 28;
@@ -2372,11 +2404,9 @@
       const ctx = canvas.getContext("2d");
       if (!ctx) throw new Error("Canvas unavailable");
 
-      // Background
       ctx.fillStyle = "#0F1114";
       ctx.fillRect(0, 0, width, height);
 
-      // Soft header glow
       ctx.globalAlpha = 0.18;
       ctx.fillStyle = "#8ca0ff";
       ctx.beginPath();
@@ -2384,18 +2414,15 @@
       ctx.fill();
       ctx.globalAlpha = 1;
 
-      // Title
       ctx.fillStyle = "rgba(233,238,246,0.96)";
       ctx.font = "800 34px system-ui, -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillText("Delvee summary", padding, padding + 44);
 
-      // Small meta line
       const gen = (session?.summaryStats?.generatedAtUtc) || session?.summaryReadyAtUtc || new Date().toISOString();
       ctx.fillStyle = "rgba(233,238,246,0.70)";
       ctx.font = "500 14px system-ui, -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillText(`Session ${sessionId} · Generated: ${gen}`, padding, padding + 72);
 
-      // Summary text block (wrapped)
       const maxTextW = width - padding * 2;
       const textTop = padding + 92;
       ctx.fillStyle = "rgba(233,238,246,0.88)";
@@ -2407,12 +2434,8 @@
         let line = "";
         for (const w of words) {
           const next = line ? (line + " " + w) : w;
-          if (ctx.measureText(next).width <= maxW) {
-            line = next;
-          } else {
-            if (line) lines.push(line);
-            line = w;
-          }
+          if (ctx.measureText(next).width <= maxW) line = next;
+          else { if (line) lines.push(line); line = w; }
         }
         if (line) lines.push(line);
         return lines;
@@ -2424,23 +2447,17 @@
       const used = lines.slice(0, maxLines);
 
       let y = textTop;
-      for (const ln of used) {
-        ctx.fillText(ln, padding, y);
-        y += 18;
-      }
+      for (const ln of used) { ctx.fillText(ln, padding, y); y += 18; }
 
-      // Grid start
       const gridLeft = padding;
       const gridTop = padding + headerH;
 
-      // Draw tiles
       let idx = 0;
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const x = gridLeft + c * (tile + gap);
           const yy = gridTop + r * (tile + gap);
 
-          // Tile background
           ctx.fillStyle = "rgba(255,255,255,0.06)";
           roundRect(ctx, x, yy, tile, tile, 18);
           ctx.fill();
@@ -2448,17 +2465,14 @@
           const im = imgs[idx++];
           if (!im) continue;
 
-          // Fit cover
           const { sx, sy, sw, sh } = coverSourceRect(im.width, im.height, tile, tile);
 
-          // Clip rounded
           ctx.save();
           roundRect(ctx, x, yy, tile, tile, 18);
           ctx.clip();
           ctx.drawImage(im, sx, sy, sw, sh, x, yy, tile, tile);
           ctx.restore();
 
-          // Border
           ctx.strokeStyle = "rgba(255,255,255,0.12)";
           ctx.lineWidth = 1;
           roundRect(ctx, x + 0.5, yy + 0.5, tile - 1, tile - 1, 18);
@@ -2466,44 +2480,11 @@
         }
       }
 
-      // Footer
       ctx.fillStyle = "rgba(233,238,246,0.55)";
       ctx.font = "500 12px system-ui, -apple-system, Segoe UI, Roboto, Arial";
       ctx.fillText("Created in Delvee · Client-side collage prototype", padding, height - padding + 10);
 
       return await new Promise((resolve) => canvas.toBlob(resolve, "image/png", 0.92));
-    }
-
-    function roundRect(ctx, x, y, w, h, r) {
-      const rr = Math.min(r, w / 2, h / 2);
-      ctx.beginPath();
-      ctx.moveTo(x + rr, y);
-      ctx.arcTo(x + w, y, x + w, y + h, rr);
-      ctx.arcTo(x + w, y + h, x, y + h, rr);
-      ctx.arcTo(x, y + h, x, y, rr);
-      ctx.arcTo(x, y, x + w, y, rr);
-      ctx.closePath();
-    }
-
-    function coverSourceRect(srcW, srcH, dstW, dstH) {
-      const srcAR = srcW / srcH;
-      const dstAR = dstW / dstH;
-      let sw = srcW, sh = srcH, sx = 0, sy = 0;
-
-      if (srcAR > dstAR) {
-        // source wider -> crop width
-        sh = srcH;
-        sw = Math.floor(srcH * dstAR);
-        sx = Math.floor((srcW - sw) / 2);
-        sy = 0;
-      } else {
-        // source taller -> crop height
-        sw = srcW;
-        sh = Math.floor(srcW / dstAR);
-        sx = 0;
-        sy = Math.floor((srcH - sh) / 2);
-      }
-      return { sx, sy, sw, sh };
     }
 
     btnDownloadCollage?.addEventListener("click", async () => {
@@ -2530,31 +2511,115 @@
         collageStatus.textContent = "Couldn’t generate collage (some images may block canvas).";
         setStatus("warn", "Collage failed", (e && e.message) ? e.message : "Try again.");
       } finally {
-        // re-enable if there are images
         const imgCount = (pulsesCache || []).filter(p => p.kind === "image" && p.attachment && p.attachment.storagePath).length;
         btnDownloadCollage.disabled = imgCount === 0;
       }
     });
 
     // -------------------------
-    // Auto-send
+    // State + countdown
     // -------------------------
-    async function maybeAutoSend() {
-      if (!getAutosend()) return;
-      if (hasSentForThisSession()) return;
+    function getLocalCooldownEndsAtMillis() {
+      if (!session) return null;
+      const base = Number(session.endAtMillis || 0);
+      if (!base) return session.cooldownEndsAtMillis || null;
 
-      const u = auth.currentUser;
-      const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
-      const code = (setfeedCodeInput.value || "").trim();
+      const localEnds = base + DV_COOLDOWN_MS;
+      const serverEnds = Number(session.cooldownEndsAtMillis || 0) || null;
+      if (!serverEnds) return localEnds;
+      return Math.min(serverEnds, localEnds) || localEnds;
+    }
 
-      if (!(state === "DONE" && session && session.summaryText)) return;
-      if (!canAccountSend && !code) return;
+    function renderCountdown() {
+      if (!session) { countdownEl.textContent = ""; return; }
+      const now = Date.now();
 
-      await sendSummaryToSetfeed();
+      if (state === "RUNNING" && !prepIsDone()) {
+        const left = Math.max(0, prepEndsAt - now);
+        countdownEl.textContent = `PREP · ${fmtMs(left)}`;
+        return;
+      }
+
+      if (state === "RUNNING" && session.endAtMillis) {
+        const left = session.endAtMillis - now;
+        countdownEl.textContent = left > 0 ? `RUNNING · ${fmtMs(left)}` : "RUNNING · 00:00";
+      } else if (state === "COOLDOWN") {
+        const ends = getLocalCooldownEndsAtMillis();
+        if (ends) {
+          const left = ends - now;
+          countdownEl.textContent = left > 0 ? `COOLDOWN · ${fmtMs(left)}` : "COOLDOWN · 00:00";
+        } else {
+          countdownEl.textContent = "COOLDOWN";
+        }
+      } else if (state === "LOBBY" && session.reservationExpiresAtMillis) {
+        const left = session.reservationExpiresAtMillis - now;
+        countdownEl.textContent = left > 0 ? `LOBBY · ${fmtMs(left)}` : "LOBBY · 00:00";
+      } else if (state === "DONE") {
+        countdownEl.textContent = "DONE";
+      } else {
+        countdownEl.textContent = state;
+      }
+    }
+
+    function renderState(nextState) {
+      state = nextState || "—";
+
+      const effectiveState = (state === "RUNNING" && !prepIsDone()) ? "PREP" : state;
+      statePill.textContent = effectiveState;
+
+      if (effectiveState === "LOBBY") {
+        hint.textContent = "Ready up. When everyone is ready, the host begins. Then: 3 minutes preparation.";
+      } else if (effectiveState === "PREP") {
+        hint.textContent = "Preparation (3 minutes). Queue images now — then the pulse window begins.";
+      } else if (effectiveState === "RUNNING") {
+        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      } else if (effectiveState === "COOLDOWN") {
+        hint.textContent = "Cooldown (3 minutes). Ask who sent what. Summary is preparing.";
+      } else if (effectiveState === "DONE") {
+        hint.textContent = "Done. Summary is ready.";
+      } else if (effectiveState === "CANCELLED") {
+        hint.textContent = "This lobby expired before it started.";
+      } else {
+        hint.textContent = "—";
+      }
+
+      const showComposer = (state === "RUNNING" && prepIsDone());
+      setHidden(composer, !showComposer);
+
+      const chatOpen = (state === "COOLDOWN" || state === "DONE");
+      chatText.disabled = !chatOpen;
+      btnChat.disabled = !chatOpen;
+      chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
+
+      setHidden(btnStop, !(isHost && state === "RUNNING"));
+
+      refreshSetfeedUI();
+    }
+
+    // PREP trigger logic
+    function maybeStartPrepPhase() {
+      if (!session) return;
+      if (session.state !== "RUNNING") return;
+
+      if (prepIsDone()) return;
+      if (prepActive) return;
+
+      const startAt = Number(session.startAtMillis || 0) || Date.now();
+      const endsAt = startAt + DV_PREP_MS;
+
+      if (Date.now() >= endsAt) {
+        prepMarkDone();
+        setComposerLocked(false);
+        return;
+      }
+
+      prepLoad();
+      setStatus("good", "PREP", "Prepare your images.");
+      prepStart(endsAt);
     }
 
     // -------------------------
-    // ✅ Guest join: ensure some auth (anonymous) + ensure alias
+    // Guest join + boot
     // -------------------------
     async function ensureAuthAndAlias() {
       let a = getAlias();
@@ -2574,50 +2639,17 @@
       }
     }
 
-    // -------------------------
-    // PREP trigger logic
-    // -------------------------
-    function maybeStartPrepPhase() {
-      // Start prep when server enters RUNNING and we haven't done prep yet
-      if (!session) return;
-      if (session.state !== "RUNNING") return;
+    // Init prep UI
+    document.getElementById("dvPrepMaxA").textContent = String(DV_PREP_MAX_IMAGES);
+    document.getElementById("dvPrepMaxB").textContent = String(DV_PREP_MAX_IMAGES);
+    prepLoad();
 
-      if (prepIsDone()) return;
-      if (prepActive) return;
-
-      // Determine prep start moment: use session.startAtMillis if present, otherwise now.
-      const startAt = Number(session.startAtMillis || 0) || Date.now();
-      const endsAt = startAt + DV_PREP_MS;
-
-      // If we're already past the prep window (late join), mark done.
-      if (Date.now() >= endsAt) {
-        prepMarkDone();
-        setComposerLocked(false);
-        return;
-      }
-
-      // Ensure prep queue loaded
-      prepLoad();
-
-      // Show overlay and begin countdown
-      setStatus("good", "PREP", "Prepare your images.");
-      prepStart(endsAt);
-    }
-
-    // -------------------------
-    // Boot: join + subscribe
-    // -------------------------
     let booted = false;
     async function boot() {
       if (booted) return;
       booted = true;
 
       if (!sessionId) return;
-
-      // initialize prep UI
-      document.getElementById("dvPrepMaxA").textContent = String(DV_PREP_MAX_IMAGES);
-      document.getElementById("dvPrepMaxB").textContent = String(DV_PREP_MAX_IMAGES);
-      prepLoad();
 
       try {
         setStatus("good", "Connecting…", "Preparing your lobby session…");
@@ -2649,28 +2681,23 @@
           session = d;
 
           const st = d.state || "—";
-
           isHost = (d.hostUid && auth.currentUser && d.hostUid === auth.currentUser.uid);
           setHidden(hostControls, !isHost);
 
-          // If session resets back to LOBBY, clear vault shown + prep done (so next run works)
           if (st === "LOBBY") {
             vaultShownForSession = false;
             vaultAnimating = false;
             prepStop();
             prepOverlayHide();
-            // Keep prep images (user may want them), but clear prep done state so prep happens next start
             prepClearDoneFlag();
           }
 
           renderState(st);
-
-          // Start PREP when RUNNING begins (frontend-only)
           maybeStartPrepPhase();
-
           renderCountdown();
           renderSummaryIfReady();
 
+          // ✅ auto-send hook
           maybeAutoSend().catch(() => {});
         }, (err) => {
           console.error(err);
@@ -2698,6 +2725,7 @@
           const list = snap.docs.map(d => d.data());
           renderFeed(list);
           renderSummaryIfReady();
+          maybeAutoSend().catch(() => {});
         })
       );
 
@@ -2709,10 +2737,7 @@
       );
 
       setInterval(() => {
-        // Keep countdown updated and keep prep overlay timer live
         renderCountdown();
-
-        // If prep is active and server leaves RUNNING, stop prep
         if (prepActive && session && session.state !== "RUNNING") {
           prepStop();
           prepOverlayHide();
@@ -2727,7 +2752,7 @@
       unsub = [];
     });
 
-    // Also allow clicking outside prep overlay inner to keep it open (no close), but ESC closes overlays
+    // ESC closes overlays
     window.addEventListener("keydown", (e) => {
       if (e.key === "Escape") {
         if (guessBackdrop.classList.contains("show")) guessBackdrop.classList.remove("show");
