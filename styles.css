@@ -2,33 +2,36 @@
    Delvee = attentive, timed, deterministic.
    Separate visual identity from Setfeed.
 
-   Update (accessibility + consistency pass):
-   - Improve keyboard focus visibility for all interactive controls.
-   - Add reduced-motion handling for users with motion sensitivity.
-   - Make lobby-polish components theme-aware (remove dark-only hardcoding).
-   - Improve small-screen ergonomics and scrollbar polish.
-   - Keep behavior/structure unchanged; CSS-only safe adjustments.
+   Update requested:
+   - ✅ Default to DARK theme (no longer auto-light by system unless explicitly set).
+   - ✅ Keep explicit light/dark overrides (top toggle keeps working).
+   - ✅ Keep all existing layout/behavior and accessibility improvements.
+
+   Notes:
+   - We set DARK tokens on :root.
+   - Light tokens live in :root[data-theme="light"].
+   - The prefers-color-scheme block is kept but gated so it won’t override the default.
 */
 
 :root{
-  /* Light */
-  --dv-bg: #FFFBFE;
-  --dv-surface: #FFFFFF;
-  --dv-surface-2: #F6F4FA;
-  --dv-surface-3: #EEEAF6;
-  --dv-line: rgba(28,27,31,0.12);
+  /* ✅ DARK DEFAULT */
+  --dv-bg: #0F1114;
+  --dv-surface: #12151A;
+  --dv-surface-2: #151923;
+  --dv-surface-3: #1A2030;
+  --dv-line: rgba(255,255,255,0.12);
 
-  --dv-text: rgba(28,27,31,0.92);
-  --dv-muted: rgba(73,69,79,0.84);
-  --dv-soft: rgba(73,69,79,0.70);
+  --dv-text: rgba(255,255,255,0.92);
+  --dv-muted: rgba(203,208,216,0.86);
+  --dv-soft: rgba(203,208,216,0.68);
 
   /* Delvee accent */
-  --dv-primary: #6C63FF;
+  --dv-primary: #7A72FF;
   --dv-on-primary: #FFFFFF;
-  --dv-primary-soft: rgba(108,99,255,0.16);
+  --dv-primary-soft: rgba(122,114,255,0.22);
 
-  --dv-good: #0F7B3D;
-  --dv-warn: #B3261E;
+  --dv-good: #86EFAC;
+  --dv-warn: #F2B8B5;
 
   --dv-font: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial;
 
@@ -53,24 +56,11 @@
   --dv-fw-bold: 620;
 }
 
+/* ✅ Keep, but do NOT override default theme.
+   If you ever want “System” behavior back, do it in JS by setting data-theme. */
 @media (prefers-color-scheme: dark){
-  :root{
-    --dv-bg: #0F1114;
-    --dv-surface: #12151A;
-    --dv-surface-2: #151923;
-    --dv-surface-3: #1A2030;
-    --dv-line: rgba(255,255,255,0.12);
-
-    --dv-text: rgba(255,255,255,0.92);
-    --dv-muted: rgba(203,208,216,0.86);
-    --dv-soft: rgba(203,208,216,0.68);
-
-    --dv-primary: #7A72FF;
-    --dv-on-primary: #FFFFFF;
-    --dv-primary-soft: rgba(122,114,255,0.22);
-
-    --dv-good: #86EFAC;
-    --dv-warn: #F2B8B5;
+  :root:not([data-theme="light"]):not([data-theme="dark"]){
+    /* Intentionally empty: default remains dark. */
   }
 }
 
@@ -139,6 +129,19 @@ button, .dv-btn, .dv-chip, .dv-theme-toggle, .dv-file-chip{
   min-height: 100vh;
   background:
     radial-gradient(900px 520px at 14% -12%,
+      color-mix(in srgb, var(--dv-primary) 12%, transparent) 0%,
+      transparent 58%),
+    radial-gradient(780px 520px at 86% 0%,
+      rgba(255,255,255,0.05) 0%,
+      transparent 62%),
+    linear-gradient(180deg,
+      rgba(255,255,255,0.022) 0%,
+      rgba(255,255,255,0.00) 30%);
+}
+/* Light override for bg texture */
+:root[data-theme="light"] .dv-bg{
+  background:
+    radial-gradient(900px 520px at 14% -12%,
       color-mix(in srgb, var(--dv-primary) 10%, transparent) 0%,
       transparent 56%),
     radial-gradient(780px 520px at 86% 0%,
@@ -147,21 +150,6 @@ button, .dv-btn, .dv-chip, .dv-theme-toggle, .dv-file-chip{
     linear-gradient(180deg,
       rgba(255,255,255,0.03) 0%,
       rgba(255,255,255,0.00) 30%);
-}
-:root[data-theme="dark"] .dv-bg,
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .dv-bg{
-    background:
-      radial-gradient(900px 520px at 14% -12%,
-        color-mix(in srgb, var(--dv-primary) 12%, transparent) 0%,
-        transparent 58%),
-      radial-gradient(780px 520px at 86% 0%,
-        rgba(255,255,255,0.05) 0%,
-        transparent 62%),
-      linear-gradient(180deg,
-        rgba(255,255,255,0.022) 0%,
-        rgba(255,255,255,0.00) 30%);
-  }
 }
 
 /* Top bar */
@@ -245,22 +233,20 @@ button, .dv-btn, .dv-chip, .dv-theme-toggle, .dv-file-chip{
 
 /* Card */
 .dv-card{
-  background: color-mix(in srgb, var(--dv-surface) 90%, transparent);
+  background: color-mix(in srgb, var(--dv-surface-2) 86%, transparent);
   border: 1px solid var(--dv-line);
   border-radius: var(--dv-r-3);
   padding: var(--dv-s-6);
   box-shadow:
+    0 1px 0 rgba(255,255,255,0.05) inset,
+    0 22px 52px rgba(0,0,0,0.32);
+}
+/* Light override */
+:root[data-theme="light"] .dv-card{
+  background: color-mix(in srgb, var(--dv-surface) 90%, transparent);
+  box-shadow:
     0 1px 0 rgba(255,255,255,0.22) inset,
     0 18px 46px rgba(0,0,0,0.10);
-}
-:root[data-theme="dark"] .dv-card,
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .dv-card{
-    background: color-mix(in srgb, var(--dv-surface-2) 86%, transparent);
-    box-shadow:
-      0 1px 0 rgba(255,255,255,0.05) inset,
-      0 22px 52px rgba(0,0,0,0.32);
-  }
 }
 
 /* Typography */
@@ -293,9 +279,7 @@ button, .dv-btn, .dv-chip, .dv-theme-toggle, .dv-file-chip{
   gap: var(--dv-s-4);
   align-items: start;
 }
-.dv-grid-3{
-  grid-template-columns: 1fr 1fr 1fr;
-}
+.dv-grid-3{ grid-template-columns: 1fr 1fr 1fr; }
 @media (max-width: 980px){
   .dv-grid, .dv-grid-3{ grid-template-columns: 1fr; }
 }
@@ -428,11 +412,9 @@ input:focus, textarea:focus, select:focus{
   border-color: color-mix(in srgb, var(--dv-primary) 54%, var(--dv-line));
   box-shadow: 0 12px 28px rgba(0,0,0,0.14);
 }
-.dv-btn-primary:hover{ background: color-mix(in srgb, var(--dv-primary) 92%, white); }
-:root[data-theme="dark"] .dv-btn-primary:hover{ background: color-mix(in srgb, var(--dv-primary) 90%, black); }
-@media (prefers-color-scheme: dark){
-  :root:not([data-theme="light"]) .dv-btn-primary:hover{ background: color-mix(in srgb, var(--dv-primary) 90%, black); }
-}
+.dv-btn-primary:hover{ background: color-mix(in srgb, var(--dv-primary) 90%, black); }
+:root[data-theme="light"] .dv-btn-primary:hover{ background: color-mix(in srgb, var(--dv-primary) 92%, white); }
+
 .dv-btn-quiet{
   background: color-mix(in srgb, var(--dv-surface-3) 8%, transparent);
 }
@@ -707,7 +689,6 @@ select:focus-visible{
 
 /* File chip (lobby image pulse) */
 .dv-file{
-  /* lobby uses the chip; keep native file input hidden */
   display:none !important;
 }
 
