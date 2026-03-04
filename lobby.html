@@ -358,6 +358,12 @@
 
               <div id="setfeedCodeBox">
                 <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
+                <!-- ✅ Keep these separate: this one is the *global decrypt helper* you added on Android -->
+                <div style="height:10px;"></div>
+                <input class="dv-input" id="setfeedReceiveCode" placeholder="Setfeed receive code (optional — helps decrypt attachments)" />
+                <div class="dv-muted2" style="margin-top:6px;">
+                  Used for decrypting Setfeed-delivered attachments if needed.
+                </div>
               </div>
 
               <div class="dv-minirow">
@@ -483,7 +489,8 @@
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
 
-    const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
+    // ✅ Matches Android lobby prefs key
+    const SETFEED_CODE_KEY = "dv_setfeed_receive_code"; // used for both send + decrypt helper
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
 
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
@@ -611,6 +618,7 @@
     const setfeedAccountBox = document.getElementById("setfeedAccountBox");
     const setfeedCodeBox = document.getElementById("setfeedCodeBox");
     const setfeedCodeInput = document.getElementById("setfeedCode");
+    const setfeedReceiveCodeInput = document.getElementById("setfeedReceiveCode");
     const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
     const setfeedStatus = document.getElementById("setfeedStatus");
 
@@ -734,7 +742,7 @@
     pulseText.addEventListener("paste", handlePasteImage);
 
     // -------------------------
-    // Setfeed helpers (manual-code fallback)
+    // Setfeed helpers (manual-code fallback + receive-code storage)
     // -------------------------
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
@@ -811,6 +819,15 @@
     }
     function setStoredSetfeedCode(v) {
       try { localStorage.setItem(SETFEED_CODE_KEY, String(v || "").trim()); } catch (_) {}
+    }
+
+    // ✅ Separate accessor for the "receive code" UI, but stored under the SAME key used by Android.
+    function getStoredReceiveCode() {
+      // same key, same data: Android reads dv_setfeed_receive_code
+      return getStoredSetfeedCode();
+    }
+    function setStoredReceiveCode(v) {
+      setStoredSetfeedCode(v);
     }
 
     function hasSentForThisSession() {
@@ -1183,6 +1200,7 @@
           body: bytes
         });
 
+        // ✅ Web lobby uploads plaintext; Android detects missing iv/salt and renders without decrypt.
         const commit = functions.httpsCallable("delveePulseImageCommit");
         await commit({
           sessionId,
@@ -1247,8 +1265,28 @@
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
+      // keep the "receive code" field in sync (same underlying key)
+      if (setfeedReceiveCodeInput) setfeedReceiveCodeInput.value = getStoredReceiveCode();
       refreshSetfeedUI();
     });
+
+    // ✅ Receive-code helper (same underlying key as Android)
+    if (setfeedReceiveCodeInput) {
+      setfeedReceiveCodeInput.value = getStoredReceiveCode();
+      setfeedReceiveCodeInput.addEventListener("input", () => {
+        setStoredReceiveCode(setfeedReceiveCodeInput.value);
+        // keep the send-code box in sync too
+        setfeedCodeInput.value = getStoredSetfeedCode();
+        refreshSetfeedUI();
+      });
+      setfeedReceiveCodeInput.addEventListener("blur", () => {
+        const n = normalizeCodeAndroid(setfeedReceiveCodeInput.value);
+        setfeedReceiveCodeInput.value = n;
+        setStoredReceiveCode(n);
+        setfeedCodeInput.value = getStoredSetfeedCode();
+        refreshSetfeedUI();
+      });
+    }
 
     btnToggleAutosend.addEventListener("click", () => {
       setAutosend(!getAutosend());
