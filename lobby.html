@@ -339,7 +339,7 @@
 
                 <button class="dv-btn dv-btn-primary" id="btn-start" type="button">Start</button>
 
-                <!-- ✅ Stop button during RUNNING (requires server callable delveeStopSession) -->
+                <!-- Stop button during RUNNING -->
                 <button class="dv-btn hidden" id="btn-stop" type="button">Stop</button>
               </div>
             </div>
@@ -348,7 +348,7 @@
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- ✅ Account-based Setfeed delivery (preferred) + fallback to manual code -->
+            <!-- ✅ ONE receive-code box only -->
             <div class="dv-summary" id="setfeedPanel">
               <h3>Setfeed summary delivery</h3>
 
@@ -357,12 +357,9 @@
               </div>
 
               <div id="setfeedCodeBox">
-                <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
-                <!-- ✅ Keep these separate: this one is the *global decrypt helper* you added on Android -->
-                <div style="height:10px;"></div>
-                <input class="dv-input" id="setfeedReceiveCode" placeholder="Setfeed receive code (optional — helps decrypt attachments)" />
+                <input class="dv-input" id="setfeedCode" placeholder="Setfeed receive code (optional — enables sending to Inbox + decrypt helper)" />
                 <div class="dv-muted2" style="margin-top:6px;">
-                  Used for decrypting Setfeed-delivered attachments if needed.
+                  Same value is used by Android (dv_setfeed_receive_code) as a fallback decrypt passphrase.
                 </div>
               </div>
 
@@ -373,7 +370,6 @@
 
               <div class="dv-muted2" id="setfeedStatus">Tip: summary encrypts locally and sends to your inbox.</div>
 
-              <!-- ✅ Close lobby (appears 2 minutes after summary generated) -->
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-danger hidden" id="btn-close-lobby" type="button">Close lobby</button>
               </div>
@@ -421,7 +417,6 @@
               <h3>Session summary</h3>
               <pre id="summaryText">—</pre>
 
-              <!-- ✅ Rich summary: aliases + messages (client-built) -->
               <div class="dv-muted2" id="summaryScore" style="margin-top:10px;"></div>
               <div class="dv-muted2" id="summaryMeta" style="margin-top:6px;">Generated on DONE.</div>
 
@@ -463,7 +458,7 @@
     </section>
   </main>
 
-  <!-- ✅ Attribution modal -->
+  <!-- Attribution modal -->
   <div class="dv-modal-backdrop" id="guessBackdrop" role="dialog" aria-modal="true" aria-label="Choose sender">
     <div class="dv-modal">
       <h3>Who do you think sent this?</h3>
@@ -489,14 +484,17 @@
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
 
-    // ✅ Matches Android lobby prefs key
-    const SETFEED_CODE_KEY = "dv_setfeed_receive_code"; // used for both send + decrypt helper
+    // ✅ Matches Android lobby prefs key (used for summary send + decrypt fallback)
+    const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
 
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
 
-    // ✅ Predictions storage (per session)
     const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
+
+    function normalizeSessionPassphrase(rawSid){
+      return String(rawSid || "").trim().toUpperCase().replace(/[\s-]/g, "");
+    }
 
     function getAlias() {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
@@ -618,7 +616,6 @@
     const setfeedAccountBox = document.getElementById("setfeedAccountBox");
     const setfeedCodeBox = document.getElementById("setfeedCodeBox");
     const setfeedCodeInput = document.getElementById("setfeedCode");
-    const setfeedReceiveCodeInput = document.getElementById("setfeedReceiveCode");
     const btnToggleAutosend = document.getElementById("btn-toggle-autosend");
     const setfeedStatus = document.getElementById("setfeedStatus");
 
@@ -654,21 +651,24 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
-    // ✅ Cache participants for alias lookup + scoring
-    let participantsCache = []; // [{uid, alias, aliasLower, ...}]
+    // cache for rendered image blob urls (encrypted android -> decrypted blob)
+    const imageBlobUrlByStoragePath = new Map(); // storagePath -> blobUrl
+
+    // Cache participants for alias lookup + scoring
+    let participantsCache = [];
     let aliasByUid = new Map();
 
-    // ✅ Cache pulses for rich summary + scoring
-    let pulsesCache = []; // latest-first
+    // Cache pulses for rich summary + scoring
+    let pulsesCache = [];
 
-    // ✅ Close-lobby timer
+    // Close-lobby timer
     let closeLobbyTimer = null;
 
-    // ✅ Guess modal state
+    // Guess modal state
     let currentGuessPulseId = null;
 
     // -------------------------
-    // Chip file picker wiring
+    // File picker chip wiring
     // -------------------------
     function renderChosenFileName() {
       const f = (pulseImage && pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
@@ -710,12 +710,9 @@
       renderChosenFileName();
     }
 
-    // ✅ Paste image with Ctrl+V into the pulse text box (RUNNING only)
     async function handlePasteImage(e) {
       try {
         if (!e || !e.clipboardData) return;
-
-        // Only meaningful during RUNNING (otherwise users accidentally paste)
         if (state !== "RUNNING") return;
 
         const items = Array.from(e.clipboardData.items || []);
@@ -726,23 +723,18 @@
         if (!file) return;
 
         e.preventDefault();
-
-        // Put the file into the hidden file input via DataTransfer
         const dt = new DataTransfer();
         dt.items.add(file);
         pulseImage.files = dt.files;
 
         renderChosenFileName();
         composerHelp.textContent = "Pasted image ready. Click “Pulse image”.";
-      } catch (_) {
-        // no-op
-      }
+      } catch (_) {}
     }
-
     pulseText.addEventListener("paste", handlePasteImage);
 
     // -------------------------
-    // Setfeed helpers (manual-code fallback + receive-code storage)
+    // Crypto helpers (PBKDF2 + AES-GCM) — matches Android
     // -------------------------
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
@@ -753,13 +745,20 @@
       return btoa(bin);
     }
 
+    function b64ToBytes(b64) {
+      const bin = atob(String(b64 || "").trim());
+      const out = new Uint8Array(bin.length);
+      for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
+      return out;
+    }
+
     async function sha256Hex(str) {
       const data = new TextEncoder().encode(str);
       const hash = await crypto.subtle.digest("SHA-256", data);
       return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
 
-    async function deriveAesKeyFromPassphrase(passphrase, saltBytes) {
+    async function deriveAesKeyFromPassphrase(passphrase, saltBytes, usages) {
       const passBytes = new TextEncoder().encode(passphrase);
       const baseKey = await crypto.subtle.importKey("raw", passBytes, { name: "PBKDF2" }, false, ["deriveKey"]);
       return await crypto.subtle.deriveKey(
@@ -767,7 +766,7 @@
         baseKey,
         { name: "AES-GCM", length: 256 },
         false,
-        ["encrypt"]
+        usages
       );
     }
 
@@ -775,38 +774,39 @@
       const passphrase = normalizeCodeAndroid(rawCode);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt, ["encrypt"]);
 
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
 
-      return {
-        ciphertextB64: bytesToB64(new Uint8Array(ct)),
-        ivB64: bytesToB64(iv),
-        saltB64: bytesToB64(salt),
-      };
+      return { ciphertextB64: bytesToB64(new Uint8Array(ct)), ivB64: bytesToB64(iv), saltB64: bytesToB64(salt) };
     }
 
-    // ✅ Encrypt raw bytes (for image attachments)
     async function encryptBytesForCode(rawCode, bytesArrayBuffer) {
       const passphrase = normalizeCodeAndroid(rawCode);
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
-      const key = await deriveAesKeyFromPassphrase(passphrase, salt);
-
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt, ["encrypt"]);
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytesArrayBuffer);
+      return { ciphertextB64: bytesToB64(new Uint8Array(ct)), ivB64: bytesToB64(iv), saltB64: bytesToB64(salt) };
+    }
 
-      return {
-        ciphertextB64: bytesToB64(new Uint8Array(ct)),
-        ivB64: bytesToB64(iv),
-        saltB64: bytesToB64(salt),
-      };
+    async function decryptBytesWithSessionKeyOrThrow(encryptedArrayBuffer, ivB64, saltB64) {
+      if (!ivB64 || !saltB64) throw new Error("Missing iv/salt");
+      const passphrase = normalizeSessionPassphrase(sessionId);
+      const salt = b64ToBytes(saltB64);
+      const iv = b64ToBytes(ivB64);
+      const key = await deriveAesKeyFromPassphrase(passphrase, salt, ["decrypt"]);
+      return await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encryptedArrayBuffer);
     }
 
     function tzName() {
       try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) { return "UTC"; }
     }
 
+    // -------------------------
+    // Setfeed prefs
+    // -------------------------
     function getAutosend() {
       try { return localStorage.getItem(SETFEED_AUTOSEND_KEY) === "true"; } catch (_) { return false; }
     }
@@ -819,15 +819,6 @@
     }
     function setStoredSetfeedCode(v) {
       try { localStorage.setItem(SETFEED_CODE_KEY, String(v || "").trim()); } catch (_) {}
-    }
-
-    // ✅ Separate accessor for the "receive code" UI, but stored under the SAME key used by Android.
-    function getStoredReceiveCode() {
-      // same key, same data: Android reads dv_setfeed_receive_code
-      return getStoredSetfeedCode();
-    }
-    function setStoredReceiveCode(v) {
-      setStoredSetfeedCode(v);
     }
 
     function hasSentForThisSession() {
@@ -844,48 +835,85 @@
       const u = auth.currentUser;
       const canAccountSend = !!u && !isAnon(u) && isGoogleUser(u);
 
-      // Prefer account-based flow if signed in (non-anon google)
       setHidden(setfeedAccountBox, !canAccountSend);
       setHidden(setfeedCodeBox, canAccountSend);
 
       const code = (setfeedCodeInput.value || "").trim();
       const hasSummary = !!(session && session.summaryText);
-      const canSend =
-        (state === "DONE" && hasSummary) &&
-        (canAccountSend || !!code);
+      const canSend = (state === "DONE" && hasSummary) && (canAccountSend || !!code);
 
       btnSendSummary.disabled = !canSend;
       btnSendSummary2.disabled = !canSend;
 
-      if (hasSentForThisSession()) {
-        setfeedStatus.textContent = "Summary sent for this session.";
-        return;
-      }
-
-      if (state !== "DONE") {
-        setfeedStatus.textContent = "Summary sends when the session is DONE.";
-        return;
-      }
-
-      if (!hasSummary) {
-        setfeedStatus.textContent = "Waiting for summary generation…";
-        return;
-      }
+      if (hasSentForThisSession()) { setfeedStatus.textContent = "Summary sent for this session."; return; }
+      if (state !== "DONE") { setfeedStatus.textContent = "Summary sends when the session is DONE."; return; }
+      if (!hasSummary) { setfeedStatus.textContent = "Waiting for summary generation…"; return; }
 
       if (canAccountSend) {
-        setfeedStatus.textContent =
-          auto
-            ? "Auto-send is ON: will send once per session (account inbox)."
-            : "Ready to send (account inbox).";
+        setfeedStatus.textContent = auto
+          ? "Auto-send is ON: will send once per session (account inbox)."
+          : "Ready to send (account inbox).";
       } else {
-        setfeedStatus.textContent =
-          code
-            ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
-            : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
+        setfeedStatus.textContent = code
+          ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
+          : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
       }
     }
 
-    // ✅ Build encrypted image attachments from pulses (manual-code flow)
+    // -------------------------
+    // Download URL + image rendering (decrypt Android images on web)
+    // -------------------------
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await call({ sessionId, storagePath });
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
+    function isProbablyPlainImage(att){
+      // web uploads plaintext and does not set iv/salt
+      return !(att && att.ivB64 && att.saltB64);
+    }
+
+    async function getRenderableImageSrc(pulse) {
+      const att = pulse?.attachment;
+      if (!att?.storagePath) return null;
+
+      const storagePath = att.storagePath;
+
+      // If we already created a blob URL for this storagePath, reuse it.
+      const cachedBlob = imageBlobUrlByStoragePath.get(storagePath);
+      if (cachedBlob) return cachedBlob;
+
+      const url = await getDownloadUrl(storagePath);
+      if (!url) return null;
+
+      // Plain web images: show directly.
+      if (isProbablyPlainImage(att)) return url;
+
+      // Android-encrypted images: download + decrypt + turn into blob URL.
+      const res = await fetch(url);
+      if (!res.ok) throw new Error("Download failed");
+      const encBuf = await res.arrayBuffer();
+
+      const plainBuf = await decryptBytesWithSessionKeyOrThrow(encBuf, att.ivB64, att.saltB64);
+
+      const contentType = att.contentType || "image/jpeg";
+      const blobUrl = URL.createObjectURL(new Blob([plainBuf], { type: contentType }));
+
+      imageBlobUrlByStoragePath.set(storagePath, blobUrl);
+      return blobUrl;
+    }
+
+    // -------------------------
+    // Build encrypted image attachments for Setfeed (FIX: decrypt android -> re-encrypt for receive code)
+    // -------------------------
     async function buildEncryptedImageAttachmentsForSetfeed(rawCode) {
       const imgs = (pulsesCache || []).filter(p => p && p.kind === "image" && p.attachment && p.attachment.storagePath);
       const out = [];
@@ -893,8 +921,9 @@
 
       for (const p of imgs) {
         n++;
-        const storagePath = p.attachment.storagePath;
-        const contentType = p.attachment.contentType || "image/*";
+        const att = p.attachment || {};
+        const storagePath = att.storagePath;
+        const contentType = att.contentType || "image/*";
 
         const url = await getDownloadUrl(storagePath);
         if (!url) continue;
@@ -902,16 +931,28 @@
         const res = await fetch(url);
         if (!res.ok) continue;
 
-        const buf = await res.arrayBuffer();
-        const enc = await encryptBytesForCode(rawCode, buf);
+        const encOrPlainBuf = await res.arrayBuffer();
 
+        // If this pulse was created on Android (iv/salt present), decrypt it first using sessionId passphrase.
+        // If it was created on web (no iv/salt), treat it as plaintext bytes.
+        let plainBuf = encOrPlainBuf;
+        if (!isProbablyPlainImage(att)) {
+          try {
+            plainBuf = await decryptBytesWithSessionKeyOrThrow(encOrPlainBuf, att.ivB64, att.saltB64);
+          } catch (_) {
+            // If decrypt fails, skip the attachment rather than sending garbage.
+            continue;
+          }
+        }
+
+        const enc = await encryptBytesForCode(rawCode, plainBuf);
         const attachmentId = `dv_img_${n}`;
 
         out.push({
           id: attachmentId,
           kind: "image",
           contentType,
-          sizeBytes: buf.byteLength,
+          sizeBytes: plainBuf.byteLength,
           ciphertext: enc.ciphertextB64,
           iv: enc.ivB64,
           salt: enc.saltB64,
@@ -921,7 +962,6 @@
       return out;
     }
 
-    // ✅ Build a sendable summary that references image attachments (so inbox can render them)
     function buildClientSummaryWithAttachmentRefs(attachments) {
       const sid = sessionId || "—";
       const participants = (participantsCache || []).length;
@@ -973,7 +1013,6 @@
 
       lines.push("");
       lines.push("Decryption is local in your browser.");
-
       return lines.join("\n");
     }
 
@@ -998,9 +1037,6 @@
 
       try {
         if (canAccountSend) {
-          // Backend callable expected:
-          //   delveeSendSummaryToSetfeed({ sessionId })
-          // It should fetch receive codes for the user and send direct.
           setfeedStatus.textContent = "Sending to account inbox…";
           const call = functions.httpsCallable("delveeSendSummaryToSetfeed");
           await call({ sessionId });
@@ -1011,7 +1047,7 @@
           return;
         }
 
-        // ✅ Manual receive code encryption + attachments (guest / fallback)
+        // Manual receive code encryption + attachments (guest / fallback)
         const codeRaw = (setfeedCodeInput.value || "").trim();
         if (!codeRaw) {
           setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
@@ -1023,13 +1059,8 @@
         const normalized = normalizeCodeAndroid(codeRaw);
         const codeHash = await sha256Hex(normalized);
 
-        // ✅ Build encrypted image attachments from the pulses
         const attachments = await buildEncryptedImageAttachmentsForSetfeed(codeRaw);
-
-        // ✅ Build a client summary referencing those attachments (so images render)
         const sendableSummaryText = buildClientSummaryWithAttachmentRefs(attachments);
-
-        // ✅ Encrypt the client summary
         const enc = await encryptForCode(codeRaw, sendableSummaryText);
 
         const deliverAtLocalIso = new Date().toISOString();
@@ -1043,7 +1074,7 @@
           deliverAtLocalIso,
           userTimezone: tzName(),
           clientRequestId: randomId("sum"),
-          attachments, // ✅ not empty anymore
+          attachments,
         });
 
         markSentForThisSession();
@@ -1065,9 +1096,7 @@
     // -------------------------
     // Actions
     // -------------------------
-    btnHome.addEventListener("click", () => {
-      window.location.href = "./index.html";
-    });
+    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -1116,7 +1145,6 @@
       }
     });
 
-    // ✅ Stop RUNNING early -> COOLDOWN (requires backend callable delveeStopSession)
     btnStop.addEventListener("click", async () => {
       if (!isHost) return;
       if (state !== "RUNNING") return;
@@ -1183,33 +1211,20 @@
 
         const attachmentId = randomId("a");
         const create = functions.httpsCallable("delveeCreateImageUpload");
-        const res = await create({
-          sessionId,
-          attachmentId,
-          sizeBytes: file.size,
-          contentType: file.type
-        });
+        const res = await create({ sessionId, attachmentId, sizeBytes: file.size, contentType: file.type });
 
         const { uploadUrl, storagePath } = res.data || {};
         if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
 
         const bytes = await file.arrayBuffer();
-        await fetch(uploadUrl, {
-          method: "PUT",
-          headers: { "Content-Type": "application/octet-stream" },
-          body: bytes
-        });
+        await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: bytes });
 
-        // ✅ Web lobby uploads plaintext; Android detects missing iv/salt and renders without decrypt.
+        // Web lobby uploads plaintext; Android renders plaintext if iv/salt missing.
         const commit = functions.httpsCallable("delveePulseImageCommit");
         await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: {
-            storagePath,
-            contentType: file.type,
-            sizeBytes: file.size
-          }
+          attachment: { storagePath, contentType: file.type, sizeBytes: file.size }
         });
 
         pendingImagePulse = null;
@@ -1247,46 +1262,26 @@
       }
     });
 
-    // ✅ Enter to send (Pulse + Chat)
+    // Enter to send (Pulse + Chat)
     pulseText.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) {
-        e.preventDefault();
-        btnPulse.click();
-      }
+      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); btnPulse.click(); }
     });
     chatText.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") {
-        e.preventDefault();
-        btnChat.click();
-      }
+      if (e.key === "Enter") { e.preventDefault(); btnChat.click(); }
     });
 
-    // Setfeed controls
+    // Setfeed controls (single box)
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
-      // keep the "receive code" field in sync (same underlying key)
-      if (setfeedReceiveCodeInput) setfeedReceiveCodeInput.value = getStoredReceiveCode();
       refreshSetfeedUI();
     });
-
-    // ✅ Receive-code helper (same underlying key as Android)
-    if (setfeedReceiveCodeInput) {
-      setfeedReceiveCodeInput.value = getStoredReceiveCode();
-      setfeedReceiveCodeInput.addEventListener("input", () => {
-        setStoredReceiveCode(setfeedReceiveCodeInput.value);
-        // keep the send-code box in sync too
-        setfeedCodeInput.value = getStoredSetfeedCode();
-        refreshSetfeedUI();
-      });
-      setfeedReceiveCodeInput.addEventListener("blur", () => {
-        const n = normalizeCodeAndroid(setfeedReceiveCodeInput.value);
-        setfeedReceiveCodeInput.value = n;
-        setStoredReceiveCode(n);
-        setfeedCodeInput.value = getStoredSetfeedCode();
-        refreshSetfeedUI();
-      });
-    }
+    setfeedCodeInput.addEventListener("blur", () => {
+      const n = normalizeCodeAndroid(setfeedCodeInput.value);
+      setfeedCodeInput.value = n;
+      setStoredSetfeedCode(n);
+      refreshSetfeedUI();
+    });
 
     btnToggleAutosend.addEventListener("click", () => {
       setAutosend(!getAutosend());
@@ -1297,7 +1292,6 @@
     btnSendSummary.addEventListener("click", sendSummaryToSetfeed);
     btnSendSummary2.addEventListener("click", sendSummaryToSetfeed);
 
-    // Close lobby (requires backend callable)
     btnCloseLobby.addEventListener("click", async () => {
       if (!auth.currentUser) return;
       try {
@@ -1333,9 +1327,7 @@
         b.type = "button";
         b.className = "dv-btn";
         b.textContent = p.alias || "—";
-        if (existing && existing.guessedUid === p.uid) {
-          b.classList.add("dv-btn-primary");
-        }
+        if (existing && existing.guessedUid === p.uid) b.classList.add("dv-btn-primary");
         b.addEventListener("click", () => {
           const next = loadPredictions();
           next[pulseId] = { guessedUid: p.uid, guessedAlias: p.alias || null };
@@ -1353,11 +1345,8 @@
       guessBackdrop.classList.remove("show");
       currentGuessPulseId = null;
     }
-
     guessClose.addEventListener("click", modalHideGuess);
-    guessBackdrop.addEventListener("click", (e) => {
-      if (e.target === guessBackdrop) modalHideGuess();
-    });
+    guessBackdrop.addEventListener("click", (e) => { if (e.target === guessBackdrop) modalHideGuess(); });
     guessClear.addEventListener("click", () => {
       if (!currentGuessPulseId) return;
       const preds = loadPredictions();
@@ -1374,19 +1363,12 @@
       state = nextState || "—";
       statePill.textContent = state;
 
-      if (state === "LOBBY") {
-        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
-      } else if (state === "RUNNING") {
-        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      } else if (state === "COOLDOWN") {
-        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
-      } else if (state === "DONE") {
-        hint.textContent = "Done. Summary is ready.";
-      } else if (state === "CANCELLED") {
-        hint.textContent = "This lobby expired before it started.";
-      } else {
-        hint.textContent = "—";
-      }
+      if (state === "LOBBY") hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
+      else if (state === "RUNNING") hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      else if (state === "COOLDOWN") hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+      else if (state === "DONE") hint.textContent = "Done. Summary is ready.";
+      else if (state === "CANCELLED") hint.textContent = "This lobby expired before it started.";
+      else hint.textContent = "—";
 
       setHidden(composer, state !== "RUNNING");
 
@@ -1396,7 +1378,6 @@
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
 
       setHidden(btnStop, !(isHost && state === "RUNNING"));
-
       refreshSetfeedUI();
     }
 
@@ -1418,24 +1399,9 @@
       }
     }
 
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
     function rebuildAliasMap(list){
       aliasByUid = new Map();
-      for (const p of list) {
-        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
-      }
+      for (const p of list) if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
     }
 
     function renderParticipants(list) {
@@ -1523,12 +1489,16 @@
           const img = document.createElement("img");
           img.className = "dv-pulse-img";
           img.alt = "Pulse image";
-
           imgWrap.appendChild(img);
+
+          // (optional) slight UX: show a placeholder while decrypting
+          img.style.opacity = "0.95";
+
           card.appendChild(imgWrap);
 
-          getDownloadUrl(it.attachment.storagePath)
-            .then((url) => { if (url) img.src = url; })
+          // ✅ This is the key fix: decrypt Android-encrypted images before setting src
+          getRenderableImageSrc(it)
+            .then((src) => { if (src) img.src = src; })
             .catch(() => {});
         }
 
@@ -1676,14 +1646,13 @@
       const code = (setfeedCodeInput.value || "").trim();
 
       if (!(state === "DONE" && session && session.summaryText)) return;
-
       if (!canAccountSend && !code) return;
 
       await sendSummaryToSetfeed();
     }
 
     // -------------------------
-    // ✅ Guest join: ensure some auth (anonymous) + ensure alias
+    // Guest join: ensure some auth (anonymous) + ensure alias
     // -------------------------
     async function ensureAuthAndAlias() {
       let a = getAlias();
@@ -1796,6 +1765,12 @@
     window.addEventListener("beforeunload", () => {
       for (const u of unsub) try { u(); } catch (_) {}
       unsub = [];
+
+      // cleanup blob urls
+      for (const url of imageBlobUrlByStoragePath.values()) {
+        try { URL.revokeObjectURL(url); } catch (_) {}
+      }
+      imageBlobUrlByStoragePath.clear();
     });
   </script>
 </body>
