@@ -1447,6 +1447,52 @@
       return url || null;
     }
 
+    // ✅ Render lobby images on web even if they were encrypted by Android
+const _blobUrlByStoragePath = new Map(); // storagePath -> blobUrl
+
+async function setImgFromAttachment(imgEl, attachment) {
+  if (!imgEl || !attachment || !attachment.storagePath) return;
+
+  const storagePath = attachment.storagePath;
+
+  // Reuse blob URLs to avoid re-downloading on re-render
+  const cached = _blobUrlByStoragePath.get(storagePath);
+  if (cached) {
+    imgEl.src = cached;
+    return;
+  }
+
+  // If not encrypted (no iv/salt), just use the signed download URL directly
+  if (!attachment.ivB64 || !attachment.saltB64) {
+    const url = await getDownloadUrl(storagePath);
+    if (url) imgEl.src = url;
+    return;
+  }
+
+  // Encrypted: download bytes, decrypt with sessionId-derived passphrase, then blob it
+  const url = await getDownloadUrl(storagePath);
+  if (!url) throw new Error("Missing download URL");
+
+  const res = await fetch(url);
+  if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
+
+  let buf = await res.arrayBuffer();
+
+  // Uses your existing helper in the file:
+  // tryDecryptLobbyImageBytesIfEncrypted(arrayBuffer, attachment)
+  buf = await tryDecryptLobbyImageBytesIfEncrypted(buf, attachment);
+
+  const blob = new Blob([buf], { type: attachment.contentType || "application/octet-stream" });
+  const blobUrl = URL.createObjectURL(blob);
+  _blobUrlByStoragePath.set(storagePath, blobUrl);
+  imgEl.src = blobUrl;
+}
+
+// Optional cleanup if you ever want it (safe to leave out)
+// window.addEventListener("beforeunload", () => {
+//   for (const url of _blobUrlByStoragePath.values()) try { URL.revokeObjectURL(url); } catch(_){}
+// });
+
     function rebuildAliasMap(list){
       aliasByUid = new Map();
       for (const p of list) {
@@ -1547,9 +1593,9 @@
           // This is fine because web uploads are plaintext and android uploads are encrypted.
           // If this specific image is encrypted (Android), web will show a broken thumbnail.
           // That is expected unless you implement web-side decrypt for live feed too.
-          getDownloadUrl(it.attachment.storagePath)
-            .then((url) => { if (url) img.src = url; })
-            .catch(() => {});
+          setImgFromAttachment(img, it.attachment).catch((e) => {
+  console.warn("Could not render image", e);
+});
         }
 
         const pulseId = it.clientPulseId ? `${it.senderUid || "?"}_${it.clientPulseId}` : (it.id || it.createdAtMillis || randomId("pulse"));
@@ -1706,7 +1752,8 @@
               ivB64: String(obj.ivB64),
               saltB64: String(obj.saltB64),
               sessionId: obj.sessionId ? String(obj.sessionId) : sessionId,
-              displayText: obj.displayText ? String(obj.displayText) : "Image"
+              displayText: obj.displayText ? String(obj.displayText) : "Image",
+              contentType: obj.contentType ? String(obj.contentType) : null
             });
           }
         } catch (_) {}
@@ -1734,7 +1781,7 @@
       const key = await deriveAesKeyFromPassphrase(pass, salt, ["decrypt"]);
       const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, buf);
 
-      const blob = new Blob([plain], { type: "image/jpeg" });
+      const blob = new Blob([plain], { type: piece.contentType || "application/octet-stream" });
       return URL.createObjectURL(blob);
     }
 
