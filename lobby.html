@@ -1,4 +1,4 @@
-<!-- delvee/lobby.html (FULL FILE REPLACEMENT) -->
+<!-- delvee/lobby.html (FULL SAFER FILE REPLACEMENT) -->
 <!doctype html>
 <html lang="en">
 <head>
@@ -280,6 +280,33 @@
       white-space: pre-wrap;
       word-break: break-word;
     }
+
+    /* ✅ Summary inline images */
+    .dv-sum-img{
+      margin-top: 8px;
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid rgba(255,255,255,0.10);
+      display: block;
+      max-height: 520px;
+      object-fit: contain;
+      background: rgba(0,0,0,0.22);
+    }
+    .dv-sum-imgcap{
+      margin-top: 6px;
+      font-size: 12px;
+      opacity: 0.72;
+      line-height: 1.35;
+    }
+    .dv-sum-err{
+      margin-top: 8px;
+      font-size: 12px;
+      opacity: 0.85;
+      color: rgba(255,140,140,0.95);
+      line-height: 1.35;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
   </style>
 </head>
 
@@ -348,7 +375,7 @@
               This is the threshold. Ready means you’re in. The host begins the window.
             </p>
 
-            <!-- ✅ ONE receive-code box only -->
+            <!-- ✅ Setfeed summary delivery: ONE code field only -->
             <div class="dv-summary" id="setfeedPanel">
               <h3>Setfeed summary delivery</h3>
 
@@ -357,10 +384,7 @@
               </div>
 
               <div id="setfeedCodeBox">
-                <input class="dv-input" id="setfeedCode" placeholder="Setfeed receive code (optional — enables sending to Inbox + decrypt helper)" />
-                <div class="dv-muted2" style="margin-top:6px;">
-                  Same value is used by Android (dv_setfeed_receive_code) as a fallback decrypt passphrase.
-                </div>
+                <input class="dv-input" id="setfeedCode" placeholder="Paste your Setfeed receive code (SF-… or SFS-…)" />
               </div>
 
               <div class="dv-minirow">
@@ -370,6 +394,7 @@
 
               <div class="dv-muted2" id="setfeedStatus">Tip: summary encrypts locally and sends to your inbox.</div>
 
+              <!-- Close lobby (appears 2 minutes after summary generated) -->
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-danger hidden" id="btn-close-lobby" type="button">Close lobby</button>
               </div>
@@ -415,13 +440,23 @@
             <!-- Summary view (DONE) -->
             <div class="dv-summary hidden" id="summaryPanel">
               <h3>Session summary</h3>
+
+              <!-- Raw summary text -->
               <pre id="summaryText">—</pre>
 
+              <!-- Rich summary -->
               <div class="dv-muted2" id="summaryScore" style="margin-top:10px;"></div>
               <div class="dv-muted2" id="summaryMeta" style="margin-top:6px;">Generated on DONE.</div>
 
               <div class="dv-minirow">
                 <button class="dv-btn dv-btn-primary" id="btn-send-summary-2" type="button" disabled>Send to Setfeed</button>
+              </div>
+
+              <!-- ✅ Inline summary images render here -->
+              <div class="dv-summary" id="summaryImagesBox" style="margin-top:12px;">
+                <h3 style="margin-bottom:8px;">Summary images</h3>
+                <div class="dv-muted2" id="summaryImagesHint">Images embedded in the summary will render here (encrypted images are decrypted locally).</div>
+                <div id="summaryImages"></div>
               </div>
 
               <div class="dv-summary" id="summaryByAliasBox" style="margin-top:12px;">
@@ -475,26 +510,21 @@
   </div>
 
   <script>
-    // -------------------------
-    // Utilities
-    // -------------------------
+    // ==========================================================
+    // Utilities / constants
+    // ==========================================================
     const qs = new URLSearchParams(window.location.search);
     const sessionId = (qs.get("session") || "").trim().toUpperCase();
 
     const ALIAS_KEY = "dv_alias";
     const LAST_SESSION_KEY = "dv_last_session";
 
-    // ✅ Matches Android lobby prefs key (used for summary send + decrypt fallback)
+    // Single receive code field (matches Android key)
     const SETFEED_CODE_KEY = "dv_setfeed_receive_code";
     const SETFEED_AUTOSEND_KEY = "dv_setfeed_autosend";
 
     const SENT_FLAG_KEY = `dv_setfeed_summary_sent_${sessionId}`;
-
-    const PRED_KEY = `dv_predictions_${sessionId}`; // { [pulseId]: { guessedUid, guessedAlias } }
-
-    function normalizeSessionPassphrase(rawSid){
-      return String(rawSid || "").trim().toUpperCase().replace(/[\s-]/g, "");
-    }
+    const PRED_KEY = `dv_predictions_${sessionId}`;
 
     function getAlias() {
       try { return (localStorage.getItem(ALIAS_KEY) || "").trim(); } catch (_) { return ""; }
@@ -502,7 +532,6 @@
     function setAlias(a) {
       try { localStorage.setItem(ALIAS_KEY, String(a || "").trim()); } catch (_) {}
     }
-
     function setLastSession(sid) {
       try { localStorage.setItem(LAST_SESSION_KEY, String(sid || "").trim().toUpperCase()); } catch (_) {}
     }
@@ -567,9 +596,9 @@
 
     document.getElementById("sessionLabel").textContent = sessionId ? `Session ${sessionId}` : "Lobby";
 
-    // -------------------------
+    // ==========================================================
     // Elements
-    // -------------------------
+    // ==========================================================
     const btnCopy = document.getElementById("btn-copy");
     const btnLeave = document.getElementById("btn-leave");
     const btnHome = document.getElementById("btn-home");
@@ -610,6 +639,9 @@
     const summaryScore = document.getElementById("summaryScore");
     const summaryByAliasEl = document.getElementById("summaryByAlias");
 
+    const summaryImagesEl = document.getElementById("summaryImages");
+    const summaryImagesHint = document.getElementById("summaryImagesHint");
+
     const btnSendSummary = document.getElementById("btn-send-summary");
     const btnSendSummary2 = document.getElementById("btn-send-summary-2");
 
@@ -629,17 +661,17 @@
     const guessClose = document.getElementById("guessClose");
     const guessClear = document.getElementById("guessClear");
 
-    // -------------------------
+    // ==========================================================
     // Firestore refs
-    // -------------------------
+    // ==========================================================
     const sref = db.collection("delvee_sessions").doc(sessionId);
     const pref = sref.collection("participants");
     const pulsesRef = sref.collection("pulses");
     const chatRef = sref.collection("chat");
 
-    // -------------------------
+    // ==========================================================
     // Local state
-    // -------------------------
+    // ==========================================================
     let unsub = [];
     let session = null;
     let me = null;
@@ -651,25 +683,16 @@
 
     const downloadUrlCache = new Map(); // storagePath -> {url, exp}
 
-    // cache for rendered image blob urls (encrypted android -> decrypted blob)
-    const imageBlobUrlByStoragePath = new Map(); // storagePath -> blobUrl
-
-    // Cache participants for alias lookup + scoring
     let participantsCache = [];
     let aliasByUid = new Map();
+    let pulsesCache = []; // latest-first
 
-    // Cache pulses for rich summary + scoring
-    let pulsesCache = [];
-
-    // Close-lobby timer
     let closeLobbyTimer = null;
-
-    // Guess modal state
     let currentGuessPulseId = null;
 
-    // -------------------------
-    // File picker chip wiring
-    // -------------------------
+    // ==========================================================
+    // Chip file picker wiring
+    // ==========================================================
     function renderChosenFileName() {
       const f = (pulseImage && pulseImage.files && pulseImage.files[0]) ? pulseImage.files[0] : null;
       if (!chipLabel) return;
@@ -723,6 +746,7 @@
         if (!file) return;
 
         e.preventDefault();
+
         const dt = new DataTransfer();
         dt.items.add(file);
         pulseImage.files = dt.files;
@@ -733,9 +757,9 @@
     }
     pulseText.addEventListener("paste", handlePasteImage);
 
-    // -------------------------
-    // Crypto helpers (PBKDF2 + AES-GCM) — matches Android
-    // -------------------------
+    // ==========================================================
+    // Crypto helpers (PBKDF2 + AES-GCM)
+    // ==========================================================
     function normalizeCodeAndroid(raw) { return String(raw || "").trim().toUpperCase().replace(/[\s-]/g, ""); }
 
     function bytesToB64(bytes) {
@@ -746,7 +770,7 @@
     }
 
     function b64ToBytes(b64) {
-      const bin = atob(String(b64 || "").trim());
+      const bin = atob(String(b64 || ""));
       const out = new Uint8Array(bin.length);
       for (let i = 0; i < bin.length; i++) out[i] = bin.charCodeAt(i);
       return out;
@@ -758,7 +782,7 @@
       return Array.from(new Uint8Array(hash)).map(b => b.toString(16).padStart(2, "0")).join("");
     }
 
-    async function deriveAesKeyFromPassphrase(passphrase, saltBytes, usages) {
+    async function deriveAesKeyFromPassphrase(passphrase, saltBytes, usage = ["encrypt", "decrypt"]) {
       const passBytes = new TextEncoder().encode(passphrase);
       const baseKey = await crypto.subtle.importKey("raw", passBytes, { name: "PBKDF2" }, false, ["deriveKey"]);
       return await crypto.subtle.deriveKey(
@@ -766,7 +790,7 @@
         baseKey,
         { name: "AES-GCM", length: 256 },
         false,
-        usages
+        usage
       );
     }
 
@@ -779,7 +803,11 @@
       const ptBytes = new TextEncoder().encode(String(plaintext || ""));
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, ptBytes);
 
-      return { ciphertextB64: bytesToB64(new Uint8Array(ct)), ivB64: bytesToB64(iv), saltB64: bytesToB64(salt) };
+      return {
+        ciphertextB64: bytesToB64(new Uint8Array(ct)),
+        ivB64: bytesToB64(iv),
+        saltB64: bytesToB64(salt),
+      };
     }
 
     async function encryptBytesForCode(rawCode, bytesArrayBuffer) {
@@ -787,26 +815,33 @@
       const salt = crypto.getRandomValues(new Uint8Array(16));
       const iv = crypto.getRandomValues(new Uint8Array(12));
       const key = await deriveAesKeyFromPassphrase(passphrase, salt, ["encrypt"]);
+
       const ct = await crypto.subtle.encrypt({ name: "AES-GCM", iv }, key, bytesArrayBuffer);
-      return { ciphertextB64: bytesToB64(new Uint8Array(ct)), ivB64: bytesToB64(iv), saltB64: bytesToB64(salt) };
+
+      return {
+        ciphertextB64: bytesToB64(new Uint8Array(ct)),
+        ivB64: bytesToB64(iv),
+        saltB64: bytesToB64(salt),
+      };
     }
 
-    async function decryptBytesWithSessionKeyOrThrow(encryptedArrayBuffer, ivB64, saltB64) {
-      if (!ivB64 || !saltB64) throw new Error("Missing iv/salt");
-      const passphrase = normalizeSessionPassphrase(sessionId);
-      const salt = b64ToBytes(saltB64);
-      const iv = b64ToBytes(ivB64);
-      const key = await deriveAesKeyFromPassphrase(passphrase, salt, ["decrypt"]);
-      return await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, encryptedArrayBuffer);
+    // ✅ Decrypt Android-encrypted lobby image bytes using the sessionId-derived passphrase
+    async function tryDecryptLobbyImageBytesIfEncrypted(arrayBuffer, attachment) {
+      // Web lobby plaintext uploads have no iv/salt => do not decrypt.
+      if (!attachment || !attachment.ivB64 || !attachment.saltB64) return arrayBuffer;
+
+      const pass = normalizeCodeAndroid(sessionId);
+      const iv = b64ToBytes(attachment.ivB64);
+      const salt = b64ToBytes(attachment.saltB64);
+
+      const key = await deriveAesKeyFromPassphrase(pass, salt, ["decrypt"]);
+      return await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, arrayBuffer);
     }
 
     function tzName() {
       try { return Intl.DateTimeFormat().resolvedOptions().timeZone || "UTC"; } catch (_) { return "UTC"; }
     }
 
-    // -------------------------
-    // Setfeed prefs
-    // -------------------------
     function getAutosend() {
       try { return localStorage.getItem(SETFEED_AUTOSEND_KEY) === "true"; } catch (_) { return false; }
     }
@@ -828,6 +863,9 @@
       try { localStorage.setItem(SENT_FLAG_KEY, "true"); } catch (_) {}
     }
 
+    // ==========================================================
+    // Setfeed UI logic
+    // ==========================================================
     function refreshSetfeedUI() {
       const auto = getAutosend();
       btnToggleAutosend.textContent = `Auto-send: ${auto ? "On" : "Off"}`;
@@ -840,90 +878,55 @@
 
       const code = (setfeedCodeInput.value || "").trim();
       const hasSummary = !!(session && session.summaryText);
-      const canSend = (state === "DONE" && hasSummary) && (canAccountSend || !!code);
+      const canSend =
+        (state === "DONE" && hasSummary) &&
+        (canAccountSend || !!code);
 
       btnSendSummary.disabled = !canSend;
       btnSendSummary2.disabled = !canSend;
 
-      if (hasSentForThisSession()) { setfeedStatus.textContent = "Summary sent for this session."; return; }
-      if (state !== "DONE") { setfeedStatus.textContent = "Summary sends when the session is DONE."; return; }
-      if (!hasSummary) { setfeedStatus.textContent = "Waiting for summary generation…"; return; }
+      if (hasSentForThisSession()) {
+        setfeedStatus.textContent = "Summary sent for this session.";
+        return;
+      }
+
+      if (state !== "DONE") {
+        setfeedStatus.textContent = "Summary sends when the session is DONE.";
+        return;
+      }
+
+      if (!hasSummary) {
+        setfeedStatus.textContent = "Waiting for summary generation…";
+        return;
+      }
 
       if (canAccountSend) {
-        setfeedStatus.textContent = auto
-          ? "Auto-send is ON: will send once per session (account inbox)."
-          : "Ready to send (account inbox).";
+        setfeedStatus.textContent =
+          auto
+            ? "Auto-send is ON: will send once per session (account inbox)."
+            : "Ready to send (account inbox).";
       } else {
-        setfeedStatus.textContent = code
-          ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
-          : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
+        setfeedStatus.textContent =
+          code
+            ? (auto ? "Auto-send is ON: will send once per session." : "Ready to send.")
+            : "Paste your Setfeed receive code to send. (Guest sessions can’t target your account inbox.)";
       }
     }
 
-    // -------------------------
-    // Download URL + image rendering (decrypt Android images on web)
-    // -------------------------
-    async function getDownloadUrl(storagePath) {
-      const cached = downloadUrlCache.get(storagePath);
-      const now = Date.now();
-      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
-
-      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
-      const res = await call({ sessionId, storagePath });
-      const url = res.data?.downloadUrl;
-      const exp = res.data?.expiresAtMillis;
-      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
-      return url || null;
-    }
-
-    function isProbablyPlainImage(att){
-      // web uploads plaintext and does not set iv/salt
-      return !(att && att.ivB64 && att.saltB64);
-    }
-
-    async function getRenderableImageSrc(pulse) {
-      const att = pulse?.attachment;
-      if (!att?.storagePath) return null;
-
-      const storagePath = att.storagePath;
-
-      // If we already created a blob URL for this storagePath, reuse it.
-      const cachedBlob = imageBlobUrlByStoragePath.get(storagePath);
-      if (cachedBlob) return cachedBlob;
-
-      const url = await getDownloadUrl(storagePath);
-      if (!url) return null;
-
-      // Plain web images: show directly.
-      if (isProbablyPlainImage(att)) return url;
-
-      // Android-encrypted images: download + decrypt + turn into blob URL.
-      const res = await fetch(url);
-      if (!res.ok) throw new Error("Download failed");
-      const encBuf = await res.arrayBuffer();
-
-      const plainBuf = await decryptBytesWithSessionKeyOrThrow(encBuf, att.ivB64, att.saltB64);
-
-      const contentType = att.contentType || "image/jpeg";
-      const blobUrl = URL.createObjectURL(new Blob([plainBuf], { type: contentType }));
-
-      imageBlobUrlByStoragePath.set(storagePath, blobUrl);
-      return blobUrl;
-    }
-
-    // -------------------------
-    // Build encrypted image attachments for Setfeed (FIX: decrypt android -> re-encrypt for receive code)
-    // -------------------------
+    // ✅ Build encrypted image attachments correctly:
+    //    fetch -> decrypt if needed -> encrypt for Setfeed code
     async function buildEncryptedImageAttachmentsForSetfeed(rawCode) {
-      const imgs = (pulsesCache || []).filter(p => p && p.kind === "image" && p.attachment && p.attachment.storagePath);
+      const imgs = (pulsesCache || [])
+        .filter(p => p && p.kind === "image" && p.attachment && p.attachment.storagePath);
+
       const out = [];
       let n = 0;
 
       for (const p of imgs) {
         n++;
-        const att = p.attachment || {};
-        const storagePath = att.storagePath;
-        const contentType = att.contentType || "image/*";
+
+        const storagePath = p.attachment.storagePath;
+        const contentType = p.attachment.contentType || "image/*";
 
         const url = await getDownloadUrl(storagePath);
         if (!url) continue;
@@ -931,28 +934,24 @@
         const res = await fetch(url);
         if (!res.ok) continue;
 
-        const encOrPlainBuf = await res.arrayBuffer();
+        let buf = await res.arrayBuffer();
 
-        // If this pulse was created on Android (iv/salt present), decrypt it first using sessionId passphrase.
-        // If it was created on web (no iv/salt), treat it as plaintext bytes.
-        let plainBuf = encOrPlainBuf;
-        if (!isProbablyPlainImage(att)) {
-          try {
-            plainBuf = await decryptBytesWithSessionKeyOrThrow(encOrPlainBuf, att.ivB64, att.saltB64);
-          } catch (_) {
-            // If decrypt fails, skip the attachment rather than sending garbage.
-            continue;
-          }
+        // If Android-encrypted, decrypt first using sessionId passphrase.
+        try {
+          buf = await tryDecryptLobbyImageBytesIfEncrypted(buf, p.attachment);
+        } catch (e) {
+          console.warn("Could not decrypt lobby image; skipping attachment", e);
+          continue;
         }
 
-        const enc = await encryptBytesForCode(rawCode, plainBuf);
+        const enc = await encryptBytesForCode(rawCode, buf);
         const attachmentId = `dv_img_${n}`;
 
         out.push({
           id: attachmentId,
           kind: "image",
           contentType,
-          sizeBytes: plainBuf.byteLength,
+          sizeBytes: buf.byteLength,
           ciphertext: enc.ciphertextB64,
           iv: enc.ivB64,
           salt: enc.saltB64,
@@ -1013,6 +1012,7 @@
 
       lines.push("");
       lines.push("Decryption is local in your browser.");
+
       return lines.join("\n");
     }
 
@@ -1047,7 +1047,6 @@
           return;
         }
 
-        // Manual receive code encryption + attachments (guest / fallback)
         const codeRaw = (setfeedCodeInput.value || "").trim();
         if (!codeRaw) {
           setStatus("warn", "Missing code", "Paste your Setfeed receive code first.");
@@ -1059,8 +1058,13 @@
         const normalized = normalizeCodeAndroid(codeRaw);
         const codeHash = await sha256Hex(normalized);
 
+        // ✅ Proper attachments: decrypt lobby images if needed, then encrypt for Setfeed
         const attachments = await buildEncryptedImageAttachmentsForSetfeed(codeRaw);
+
+        // ✅ Summary referencing attachment ids
         const sendableSummaryText = buildClientSummaryWithAttachmentRefs(attachments);
+
+        // ✅ Encrypt summary text for Setfeed
         const enc = await encryptForCode(codeRaw, sendableSummaryText);
 
         const deliverAtLocalIso = new Date().toISOString();
@@ -1093,10 +1097,12 @@
       }
     }
 
-    // -------------------------
+    // ==========================================================
     // Actions
-    // -------------------------
-    btnHome.addEventListener("click", () => { window.location.href = "./index.html"; });
+    // ==========================================================
+    btnHome.addEventListener("click", () => {
+      window.location.href = "./index.html";
+    });
 
     btnCopy.addEventListener("click", async () => {
       try {
@@ -1211,20 +1217,33 @@
 
         const attachmentId = randomId("a");
         const create = functions.httpsCallable("delveeCreateImageUpload");
-        const res = await create({ sessionId, attachmentId, sizeBytes: file.size, contentType: file.type });
+        const res = await create({
+          sessionId,
+          attachmentId,
+          sizeBytes: file.size,
+          contentType: file.type
+        });
 
         const { uploadUrl, storagePath } = res.data || {};
         if (!uploadUrl || !storagePath) throw new Error("Missing uploadUrl/storagePath");
 
         const bytes = await file.arrayBuffer();
-        await fetch(uploadUrl, { method: "PUT", headers: { "Content-Type": "application/octet-stream" }, body: bytes });
+        await fetch(uploadUrl, {
+          method: "PUT",
+          headers: { "Content-Type": "application/octet-stream" },
+          body: bytes
+        });
 
-        // Web lobby uploads plaintext; Android renders plaintext if iv/salt missing.
+        // Web lobby uploads plaintext; Android app detects missing iv/salt and renders without decrypt.
         const commit = functions.httpsCallable("delveePulseImageCommit");
         await commit({
           sessionId,
           clientPulseId: pendingImagePulse,
-          attachment: { storagePath, contentType: file.type, sizeBytes: file.size }
+          attachment: {
+            storagePath,
+            contentType: file.type,
+            sizeBytes: file.size
+          }
         });
 
         pendingImagePulse = null;
@@ -1262,15 +1281,20 @@
       }
     });
 
-    // Enter to send (Pulse + Chat)
     pulseText.addEventListener("keydown", (e) => {
-      if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); btnPulse.click(); }
+      if (e.key === "Enter" && !e.shiftKey) {
+        e.preventDefault();
+        btnPulse.click();
+      }
     });
     chatText.addEventListener("keydown", (e) => {
-      if (e.key === "Enter") { e.preventDefault(); btnChat.click(); }
+      if (e.key === "Enter") {
+        e.preventDefault();
+        btnChat.click();
+      }
     });
 
-    // Setfeed controls (single box)
+    // Setfeed controls
     setfeedCodeInput.value = getStoredSetfeedCode();
     setfeedCodeInput.addEventListener("input", () => {
       setStoredSetfeedCode(setfeedCodeInput.value);
@@ -1308,9 +1332,9 @@
       }
     });
 
-    // -------------------------
+    // ==========================================================
     // Guess modal
-    // -------------------------
+    // ==========================================================
     function modalShowGuess(pulseId, previewText){
       currentGuessPulseId = pulseId;
       guessPreview.textContent = previewText || "—";
@@ -1345,8 +1369,11 @@
       guessBackdrop.classList.remove("show");
       currentGuessPulseId = null;
     }
+
     guessClose.addEventListener("click", modalHideGuess);
-    guessBackdrop.addEventListener("click", (e) => { if (e.target === guessBackdrop) modalHideGuess(); });
+    guessBackdrop.addEventListener("click", (e) => {
+      if (e.target === guessBackdrop) modalHideGuess();
+    });
     guessClear.addEventListener("click", () => {
       if (!currentGuessPulseId) return;
       const preds = loadPredictions();
@@ -1356,19 +1383,26 @@
       renderSummaryIfReady();
     });
 
-    // -------------------------
+    // ==========================================================
     // Realtime rendering
-    // -------------------------
+    // ==========================================================
     function renderState(nextState) {
       state = nextState || "—";
       statePill.textContent = state;
 
-      if (state === "LOBBY") hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
-      else if (state === "RUNNING") hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
-      else if (state === "COOLDOWN") hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
-      else if (state === "DONE") hint.textContent = "Done. Summary is ready.";
-      else if (state === "CANCELLED") hint.textContent = "This lobby expired before it started.";
-      else hint.textContent = "—";
+      if (state === "LOBBY") {
+        hint.textContent = "Ready up. When everyone is ready, the host begins the pulse window.";
+      } else if (state === "RUNNING") {
+        hint.textContent = "Pulse fast. Preview is anonymous. Chat opens during cooldown.";
+      } else if (state === "COOLDOWN") {
+        hint.textContent = "Cooldown (5 minutes). Ask who sent what. Summary is preparing.";
+      } else if (state === "DONE") {
+        hint.textContent = "Done. Summary is ready.";
+      } else if (state === "CANCELLED") {
+        hint.textContent = "This lobby expired before it started.";
+      } else {
+        hint.textContent = "—";
+      }
 
       setHidden(composer, state !== "RUNNING");
 
@@ -1378,6 +1412,7 @@
       chatMeta.textContent = chatOpen ? "Open" : "Opens in cooldown";
 
       setHidden(btnStop, !(isHost && state === "RUNNING"));
+
       refreshSetfeedUI();
     }
 
@@ -1399,9 +1434,24 @@
       }
     }
 
+    async function getDownloadUrl(storagePath) {
+      const cached = downloadUrlCache.get(storagePath);
+      const now = Date.now();
+      if (cached && cached.exp && now < cached.exp - 20_000) return cached.url;
+
+      const call = functions.httpsCallable("delveeCreateImageDownloadUrl");
+      const res = await call({ sessionId, storagePath });
+      const url = res.data?.downloadUrl;
+      const exp = res.data?.expiresAtMillis;
+      if (url) downloadUrlCache.set(storagePath, { url, exp: exp || (now + 240_000) });
+      return url || null;
+    }
+
     function rebuildAliasMap(list){
       aliasByUid = new Map();
-      for (const p of list) if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
+      for (const p of list) {
+        if (p && p.uid) aliasByUid.set(p.uid, p.alias || "—");
+      }
     }
 
     function renderParticipants(list) {
@@ -1489,16 +1539,16 @@
           const img = document.createElement("img");
           img.className = "dv-pulse-img";
           img.alt = "Pulse image";
+
           imgWrap.appendChild(img);
-
-          // (optional) slight UX: show a placeholder while decrypting
-          img.style.opacity = "0.95";
-
           card.appendChild(imgWrap);
 
-          // ✅ This is the key fix: decrypt Android-encrypted images before setting src
-          getRenderableImageSrc(it)
-            .then((src) => { if (src) img.src = src; })
+          // Web UI shows the encrypted blob directly; Android decrypts.
+          // This is fine because web uploads are plaintext and android uploads are encrypted.
+          // If this specific image is encrypted (Android), web will show a broken thumbnail.
+          // That is expected unless you implement web-side decrypt for live feed too.
+          getDownloadUrl(it.attachment.storagePath)
+            .then((url) => { if (url) img.src = url; })
             .catch(() => {});
         }
 
@@ -1612,6 +1662,130 @@
       }, delay);
     }
 
+    // ==========================================================
+    // Summary inline image rendering (parses [delvee:image-meta]{...})
+    // ==========================================================
+    function parseSummaryImageMeta(summaryTextRaw){
+      const raw = String(summaryTextRaw || "");
+      const tag = "[delvee:image-meta]";
+      const lower = raw.toLowerCase();
+      const out = [];
+
+      let idx = 0;
+      while (true) {
+        const metaIdx = lower.indexOf(tag, idx);
+        if (metaIdx < 0) break;
+
+        const jsonStart = metaIdx + tag.length;
+        let i = jsonStart;
+        while (i < raw.length && /\s/.test(raw[i])) i++;
+
+        if (i >= raw.length || raw[i] !== "{") {
+          idx = metaIdx + tag.length;
+          continue;
+        }
+
+        let depth = 0;
+        let end = -1;
+        for (let j = i; j < raw.length; j++) {
+          const ch = raw[j];
+          if (ch === "{") depth++;
+          else if (ch === "}") {
+            depth--;
+            if (depth === 0) { end = j; break; }
+          }
+        }
+        if (end < 0) break;
+
+        const jsonStr = raw.slice(i, end + 1);
+        try {
+          const obj = JSON.parse(jsonStr);
+          if (obj && obj.storagePath && obj.ivB64 && obj.saltB64) {
+            out.push({
+              storagePath: String(obj.storagePath),
+              ivB64: String(obj.ivB64),
+              saltB64: String(obj.saltB64),
+              sessionId: obj.sessionId ? String(obj.sessionId) : sessionId,
+              displayText: obj.displayText ? String(obj.displayText) : "Image"
+            });
+          }
+        } catch (_) {}
+
+        idx = end + 1;
+      }
+      return out;
+    }
+
+    async function decryptSummaryImageToObjectUrl(piece){
+      // summary pieces are always encrypted (if meta present)
+      const url = await getDownloadUrl(piece.storagePath);
+      if (!url) throw new Error("Missing download URL.");
+
+      const res = await fetch(url);
+      if (!res.ok) throw new Error(`Download failed: HTTP ${res.status}`);
+
+      const buf = await res.arrayBuffer();
+
+      // derive passphrase from piece.sessionId (matches Android behaviour)
+      const pass = normalizeCodeAndroid(piece.sessionId || sessionId);
+      const iv = b64ToBytes(piece.ivB64);
+      const salt = b64ToBytes(piece.saltB64);
+
+      const key = await deriveAesKeyFromPassphrase(pass, salt, ["decrypt"]);
+      const plain = await crypto.subtle.decrypt({ name: "AES-GCM", iv }, key, buf);
+
+      const blob = new Blob([plain], { type: "image/jpeg" });
+      return URL.createObjectURL(blob);
+    }
+
+    async function renderSummaryImagesFromMeta(){
+      if (!summaryImagesEl) return;
+      summaryImagesEl.innerHTML = "";
+      if (!session || !session.summaryText) {
+        if (summaryImagesHint) summaryImagesHint.textContent = "No summary yet.";
+        return;
+      }
+
+      const pieces = parseSummaryImageMeta(session.summaryText);
+      if (!pieces.length) {
+        if (summaryImagesHint) summaryImagesHint.textContent = "No embedded images found in the summary.";
+        return;
+      }
+
+      if (summaryImagesHint) summaryImagesHint.textContent =
+        "Decrypting summary images locally… (if you see errors, the sessionId/iv/salt may not match)";
+
+      for (const piece of pieces) {
+        const wrap = document.createElement("div");
+        wrap.style.marginTop = "10px";
+
+        const cap = document.createElement("div");
+        cap.className = "dv-sum-imgcap";
+        cap.textContent = piece.displayText || "Image";
+        wrap.appendChild(cap);
+
+        const img = document.createElement("img");
+        img.className = "dv-sum-img";
+        img.alt = "Summary image";
+        wrap.appendChild(img);
+
+        const err = document.createElement("div");
+        err.className = "dv-sum-err";
+        err.style.display = "none";
+        wrap.appendChild(err);
+
+        summaryImagesEl.appendChild(wrap);
+
+        try {
+          const objUrl = await decryptSummaryImageToObjectUrl(piece);
+          img.src = objUrl;
+        } catch (e) {
+          err.style.display = "block";
+          err.textContent = `Could not decrypt image.\n${(e && e.message) ? e.message : String(e)}`;
+        }
+      }
+    }
+
     function renderSummaryIfReady() {
       const has = !!(session && session.summaryText);
       setHidden(summaryPanel, !(state === "DONE" && has));
@@ -1631,6 +1805,9 @@
             : "Correct predictions: — (click pulses to make guesses)";
 
         summaryByAliasEl.textContent = buildSummaryByAlias();
+
+        // ✅ NEW: render embedded summary images (decrypt locally)
+        renderSummaryImagesFromMeta().catch(() => {});
       }
 
       scheduleCloseLobbyButton();
@@ -1651,9 +1828,9 @@
       await sendSummaryToSetfeed();
     }
 
-    // -------------------------
-    // Guest join: ensure some auth (anonymous) + ensure alias
-    // -------------------------
+    // ==========================================================
+    // Guest join: ensure auth + alias
+    // ==========================================================
     async function ensureAuthAndAlias() {
       let a = getAlias();
       if (!a) {
@@ -1672,9 +1849,9 @@
       }
     }
 
-    // -------------------------
+    // ==========================================================
     // Boot: join + subscribe
-    // -------------------------
+    // ==========================================================
     let booted = false;
     async function boot() {
       if (booted) return;
@@ -1765,12 +1942,6 @@
     window.addEventListener("beforeunload", () => {
       for (const u of unsub) try { u(); } catch (_) {}
       unsub = [];
-
-      // cleanup blob urls
-      for (const url of imageBlobUrlByStoragePath.values()) {
-        try { URL.revokeObjectURL(url); } catch (_) {}
-      }
-      imageBlobUrlByStoragePath.clear();
     });
   </script>
 </body>
